@@ -1,0 +1,26 @@
+{
+  "name": "Sport pack",
+  "themeId": "neon-miami",
+  "tiles": [
+    {
+      "label": "Engine block",
+      "metrics": ["rpm", "boost", "coolant"],
+      "colSpan": 2,
+      "rowSpan": 1,
+      "css": ".tile__value { color: var(--accent-alt); } .tile__bar-fill { background: var(--accent-alt); }"
+    },
+    {
+      "label": "Full trip",
+      "metrics": ["tripDistance", "tripAverage", "tripDuration"],
+      "colSpan": 2,
+      "rowSpan": 1,
+      "css": ".tile__label { letter-spacing: 0.3em; }"
+    },
+    {
+      "label": "Dynamics",
+      "metrics": ["lateralG", "longitudinalG"],
+      "colSpan": 1,
+      "rowSpan": 1
+    }
+  ]
+}

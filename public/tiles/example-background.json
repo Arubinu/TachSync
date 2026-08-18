@@ -1,0 +1,18 @@
+{
+  "name": "Pulsing scenery",
+  "themeId": "neon-miami",
+  "backgrounds": [
+    {
+      "label": "Reactive halo",
+      "layout": [
+        { "tag": "div", "class": "glow" },
+        { "tag": "div", "class": "scan" }
+      ],
+      "css": ".glow { position: absolute; inset: -20%; background: radial-gradient(circle at 50% 90%, rgba(255,45,149,0.35), transparent 60%); opacity: calc(0.25 + var(--rpm-ratio, 0) * 0.75); transition: opacity 200ms linear; } .scan { position: absolute; inset: 0; background: repeating-linear-gradient(to bottom, rgba(34,211,238,0.05) 0 1px, transparent 1px 4px); }"
+    },
+    {
+      "label": "Vanishing grid",
+      "css": ".backdrop { background: linear-gradient(180deg, transparent 55%, rgba(34,211,238,0.10) 100%), repeating-linear-gradient(90deg, rgba(34,211,238,0.10) 0 1px, transparent 1px 40px); }"
+    }
+  ]
+}

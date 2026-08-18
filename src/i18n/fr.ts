@@ -1,0 +1,387 @@
+import type { Translation } from './types';
+
+export const fr: Translation = {
+  languageName: 'Français',
+  roadRules: 'Sur la voie publique, le code de la route prime. Cette application ne justifie aucune infraction, et aucune étape de la calibration n’en demande.',
+
+  terms: {
+    title: 'Avant de rouler',
+    lead: 'Cette application affiche. Elle ne conduit pas.',
+    driver: 'Tu es seul responsable de ta conduite, de ton véhicule et de tous ceux qui t’entourent. Rien de ce qui est affiché ici ne t’en décharge, à aucun moment.',
+    law: 'Le code de la route prime, tout le temps. Aucune lecture ni aucune étape de la calibration ne justifie de dépasser une limite ou de prendre un risque.',
+    attention: 'L’écran se lit d’un coup d’œil, jamais en le manipulant au volant. Pendant une capture ou une calibration, laisse faire ton passager.',
+    noWarranty: 'Les valeurs viennent de ton véhicule et peuvent être fausses, en retard ou absentes. Ne t’y fie jamais là où la sécurité en dépend. Fourni tel quel, sans garantie.',
+    accept: 'J’ai compris et j’accepte',
+  },
+  connect: {
+    nearbyAdapters: 'Adaptateurs à proximité',
+    obdAdapter: 'Adaptateur OBD-II',
+    bluetoothUnavailable: 'Bluetooth indisponible',
+    chooserHint:
+      'Le navigateur affiche lui-même la liste des appareils : il ne laisse pas une page inventorier ton Bluetooth.',
+    chooseAdapter: 'Choisir un adaptateur',
+    searching: 'Recherche…',
+    noAdapter: 'Aucun adaptateur trouvé.',
+    searchInProgress: 'Recherche en cours',
+    selectionInterrupted: 'Sélection interrompue.',
+    scanFailed: 'Recherche impossible.',
+    continueWithout: 'Continuer sans adaptateur',
+    simulatedData: 'Données simulées',
+    changeLanguage: 'Changer de langue',
+  },
+
+  capture: {
+    title: 'Capture OBD',
+    safety: 'Laisse faire ton passager. Ne manipule jamais l’écran en conduisant.',
+    progress: 'Étape {index} sur {total}',
+    next: 'Étape suivante',
+    finish: 'Terminer',
+    done: 'Capture terminée.',
+    export: 'Exporter le journal',
+    steps: {
+      ignition: 'Contact mis, moteur coupé. Laisse l’adaptateur s’initialiser.',
+      idle: 'Démarre le moteur et laisse-le tourner au ralenti.',
+      gentleAccel: 'Accélère doucement jusqu’à 50 km/h environ, puis stabilise.',
+      firmAccel: 'Accélère franchement sur deux passages de rapport.',
+      liftOff: 'Lève le pied et laisse agir le frein moteur.',
+      hardBrake: 'Freine fermement, là où c’est sans danger.',
+      cornerLeft: 'Prends un virage serré à gauche.',
+      cornerRight: 'Prends un virage serré à droite.',
+      cruise: 'Tiens 80 à 90 km/h pendant une minute.',
+      shutdown: 'Range-toi, laisse tourner un instant, puis coupe.',
+    },
+  },
+
+  discovery: {
+    insecureContext:
+      'Le Bluetooth exige une connexion sécurisée. Ouvre le site en HTTPS, ou installe l’application.',
+    webView:
+      'Cette vue intégrée ne donne pas accès au Bluetooth. Ouvre le site dans Chrome, ou installe l’application.',
+    unsupportedBrowser: 'Ce navigateur ne gère pas le Bluetooth. Chrome sur Android le gère.',
+    nativePending:
+      'Le Bluetooth n’est pas encore branché dans cette version de l’application. Utilise le simulateur en attendant.',
+  },
+
+  settings: {
+    title: 'Réglages',
+    lightOn: 'Thème clair',
+    lightOff: 'Thème sombre',
+    profiles: 'Profils',
+    person: 'Personne',
+    vehicleProfile: 'Véhicule',
+    look: 'Apparence',
+    profileName: 'Renommer',
+    vehicleDetected: 'Nouveau véhicule détecté',
+    nameHint: 'Appuyez pour le nommer, ou faites-le plus tard dans les réglages de profils.',
+    topSpeed: 'Vitesse max',
+    redline: 'Rupteur',
+    duplicate: 'Dupliquer',
+    newProfile: 'Nouveau',
+    appearance: 'Apparence',
+    background: 'Fond',
+    avatar: 'Avatar',
+    textScale: 'Échelle du texte',
+    language: 'Langue',
+    simulator: 'Simulateur',
+    calibration: 'Calibration',
+    drivingStyle: 'Style de conduite',
+    vehicle: 'Véhicule',
+    board: 'Plateau',
+    landscape: 'Paysage',
+    portrait: 'Portrait',
+    editMode: 'Mode édition',
+    resetTrip: 'Réinitialiser le trajet',
+    imports: 'Imports',
+    delete: 'Supprimer',
+    tilesCount: 'tuile(s)',
+    backgroundsCount: 'fond(s)',
+    trips: 'Trajets',
+    noTrips: 'Aucun trajet enregistré.',
+    clearTrips: 'Tout effacer',
+    useTripHistory: 'S’appuyer sur mes trajets',
+    useTripHistoryOn: 'Activé',
+    useTripHistoryOff: 'Désactivé',
+    baselineFrom: 'Lu sur {count} trajets. Ta conduite ordinaire décide où commence « nerveux ».',
+    baselineTooFew: 'Il faut {count} trajets sur ce véhicule avant de pouvoir en tirer quoi que ce soit.',
+    backup: 'Sauvegarde',
+    export: 'Exporter',
+    import: 'Importer',
+    remove: 'Retirer',
+    backupHint:
+      'Réglages et avatars en un seul fichier .{ext}. Tout vit dans ce navigateur ; l’import remplace tout.',
+    backupWarning: 'Remise à zéro lors de l’importation !',
+    backupNotice: `SAUVEGARDE TACHSYNC
+===================
+
+Ce fichier est une ARCHIVE ZIP ordinaire, sous une extension propre à
+l'application. Pour l'ouvrir avec l'outil de ton système, renomme-le en
+.zip — rien d'autre n'est nécessaire.
+
+CONTENU
+-------
+
+  {settings}
+      Tes réglages, en JSON indenté : disposition des tuiles par
+      orientation, tuiles et fonds importés, avatar choisi, échelle du
+      texte. Lisible et modifiable dans n'importe quel éditeur de texte.
+
+  {avatars}
+      Les fichiers d'avatars que tu avais importés, tels quels (.riv,
+      .glb ou .gltf). Ils ne tiennent pas dans le fichier de réglages :
+      ce sont des binaires de plusieurs mégaoctets.
+
+{list}{wallpaper}
+
+  {readme}
+      Cette notice.
+
+RESTAURER
+---------
+
+Réglages -> Sauvegarde -> Importer, et choisis ce fichier. Les réglages
+et les avatars sont rétablis ensemble.
+
+L'import REMPLACE l'ensemble de la configuration existante.
+
+Seuls les fichiers .{ext} sont acceptés. Si tu n'as qu'un ancien
+{settings} isolé, place-le dans une archive zip sous ce nom exact,
+renomme l'archive en .{ext}, et elle sera relue normalement.
+`,
+    backupNoticeNoAvatars: '  (aucun avatar importé au moment de la sauvegarde)',
+    backupSaved: 'Sauvegarde enregistrée.',
+    backupSavedWithAvatars: 'Sauvegarde enregistrée, avec {count} avatar(s).',
+    settingsRestored: 'Réglages restaurés.',
+    settingsAndAvatarsRestored: 'Réglages et {count} avatar(s) restaurés.',
+    avatarImported: '« {name} » importé.',
+    importFailed: 'Import impossible.',
+    importBackground: 'Importer une image',
+    removeBackground: 'Supprimer l’image',
+    importedImage: 'Image importée',
+    backupNoticeWallpaper: '  wallpaper/\n      L’image de fond que vous aviez importée, telle quelle.',
+    defaultBackground: 'Par défaut',
+    noTheme: 'Sans thème',
+    previousAvatar: 'Avatar précédent',
+    nextAvatar: 'Avatar suivant',
+    close: 'Fermer',
+  },
+
+  catalog: {
+    title: 'Ajouter une tuile',
+    hint: 'Faites glisser une miniature sur la grille pour l’y déposer.',
+    import: 'Importer',
+    theme: 'Thème',
+    information: 'Informations',
+    all: 'Toutes',
+    noMatch: 'Aucune tuile ne correspond à ces filtres.',
+    unavailableOnVehicle: 'indisponible sur ce véhicule',
+    nothingImported: 'Rien importé.',
+    importedPlain: '{items} importé(s).',
+    importedFrom: '{items} importé(s) depuis « {pack} ».',
+    andJoiner: 'et',
+    cannotRemove: 'Cette tuile est native et ne peut pas être retirée.',
+  },
+
+  editor: {
+    layout: 'Mise en page',
+    noRoom: 'Pas la place : une autre tuile occupe le terrain.',
+    boardFull: 'Pas la place : le plateau est trop occupé.',
+    holdForSettings: 'Reste appuyé pour ouvrir les réglages.',
+    scale: 'Échelle',
+    layer: 'Couche',
+    orientation: 'Orientation',
+    normal: 'Normale',
+    mirrored: 'Miroir',
+    whenMissing: 'Si la valeur manque',
+    missingOnVehicle: 'Cette valeur n’existe pas sur le véhicule connecté.',
+    missingGeneric: 'Sur un véhicule qui ne la fournit pas.',
+    hide: 'Masquer',
+    keep: 'Garder',
+    delete: 'Supprimer cette tuile',
+    close: 'Fermer',
+    reset: 'Taille d’origine',
+    columns: 'Colonnes',
+    rows: 'Lignes',
+    decrease: 'retirer',
+    increase: 'ajouter',
+    tile: 'Tuile',
+    spacing: 'Espacement',
+    spacingAuto: 'Thème',
+    dressing: 'Habillage',
+    caption: 'Libellé',
+    captions: {
+      show: 'Affiché',
+      hide: 'Masqué',
+      spread: 'Étalé',
+    },
+    dressings: {
+      default: 'Par défaut',
+      borderless: 'Sans bordures',
+      unfilled: 'Sans fond',
+      bare: 'Sans habillage',
+      feathered: 'Fondu',
+    },
+    edges: 'Bords',
+    edgeSides: { top: 'Haut', right: 'Droite', bottom: 'Bas', left: 'Gauche' },
+    edgeModes: { auto: 'automatique', force: 'forcé', off: 'désactivé' },
+  },
+
+  keyboard: {
+    title: 'Clavier',
+    between: 'Entre les tuiles',
+    grab: 'Saisir, déposer',
+    nudge: 'Déplacer d’une cellule',
+    resize: 'Redimensionner',
+    edit: 'Réglages de la tuile',
+  },
+
+  editBar: {
+    addTile: 'Ajouter une tuile',
+    exitEditMode: 'Quitter le mode édition',
+    back: 'Revenir au menu précédent',
+    columns: 'Colonnes',
+    columnsShort: 'Col.',
+    rows: 'Lignes',
+    rowsShort: 'Lig.',
+    add: 'ajouter',
+    subtract: 'retirer',
+    activeLayer: 'Couche active : {layer}. Passer à la suivante',
+  },
+
+  status: {
+    disconnected: 'Déconnecté',
+    connecting: 'Connexion…',
+    connected: 'Connecté',
+    error: 'Erreur de connexion',
+  },
+
+  layers: {
+    background: 'Fond',
+    main: 'Principal',
+    front: 'Avant',
+  },
+
+  profiles: {
+    eco: 'Éco',
+    normal: 'Normal',
+    sporty: 'Sportif',
+    aggressive: 'Agressif',
+  },
+
+  metrics: {
+    speed: 'Vitesse',
+    rpm: 'Régime',
+    gear: 'Rapport',
+    throttle: 'Papillon',
+    boost: 'Turbo',
+    consumption: 'Conso instantanée',
+    consumptionRate: 'Conso horaire',
+    engineLoad: 'Charge moteur',
+    coolant: 'Température',
+    maf: 'Débit d’air',
+    lateralG: 'G latéral',
+    longitudinalG: 'G longitudinal',
+    tripDistance: 'Distance trajet',
+    tripAverage: 'Moyenne trajet',
+    tripDuration: 'Durée trajet',
+    avatar: 'Avatar',
+  },
+
+  categories: {
+    driving: 'Conduite',
+    engine: 'Moteur',
+    consumption: 'Consommation',
+    trip: 'Trajet',
+    character: 'Personnage',
+  },
+
+  avatars: {
+    neonFaceLabel: 'Visage néon',
+    neonFaceDescription: 'Visage lumineux et widgets HUD, dessiné par le code.',
+    plushLabel: 'Compagnon peluche',
+    plushDescription: 'Petit compagnon tout en rondeurs, modelé par le code.',
+  },
+
+  driveModes: {
+    eco: 'Éco',
+    normal: 'Normal',
+    sport: 'Sport',
+  },
+  calibration: {
+    title: 'Calibration',
+    done: 'Calibré',
+    declareModes: 'Quels modes de conduite propose ce véhicule ?',
+    noModesHint: 'N’en coche aucun si elle n’a pas de sélecteur. Tout le reste est mesuré quand même.',
+    start: 'Commencer',
+    next: 'Étape suivante',
+    skip: 'Passer cette étape',
+    stepOf: 'Étape {index} sur {total}',
+    driveInMode: 'Roule en {mode}',
+    phases: {
+      warmup: 'Fais chauffer le moteur',
+      idle: 'Laisse tourner au ralenti, à l’arrêt',
+      drive: 'Roule normalement',
+      done: 'Terminé',
+    },
+    hints: {
+      warmup: 'On attend que la température d’eau monte.',
+      idle: 'Frein à main serré, pied levé.',
+      drive: 'Routes variées, quelques rapports, quelques positions de pédale.',
+    },
+    idle: 'Ralenti',
+    redline: 'Rupteur',
+    topSpeed: 'Échelle du compteur',
+    turbo: 'Suralimentation',
+    modesLearned: 'Modes appris',
+    measured: 'mesuré',
+    inferred: 'déduit',
+    notMeasured: 'non mesuré',
+    modesTooClose: 'Les modes se ressemblent trop pour être distingués ensuite. Tout le reste est conservé.',
+    yes: 'Oui',
+    no: 'Non',
+    apply: 'Appliquer',
+    export: 'Exporter',
+    openFromSettings: 'Calibrer sur ce véhicule',
+    never: 'Ce véhicule n’a jamais été calibré.',
+    lastRun: 'Calibrée le {date}',
+    recalibrate: 'Relancer',
+    aged: 'Calibré il y a {days} jours, {count} trajets en arrière.',
+    revsBeyond: 'Tes trajets ont atteint {rpm} tr/min depuis, au-dessus du rupteur calibré.',
+    adoptRedline: 'Adopter {rpm} tr/min',
+    forget: 'Oublier',
+    modesNone: 'Aucun mode',
+  },
+  transfer: {
+    title: 'Importer / Exporter',
+    kinds: {
+      people: 'personne',
+      vehicles: 'véhicule',
+      appearances: 'apparence',
+    },
+    drop: 'Dépose ici un fichier de {kind}, ou touche pour en choisir un.',
+    scope: 'Seule une {kind} peut être importée ici. Elle s’ajoute à la liste, rien n’est remplacé.',
+    export: 'Exporter {name}',
+    added: '{name} ajouté.',
+  },
+  errors: {
+    unreadableArchive: 'Archive illisible.',
+    notABackup: 'Ce fichier n’est pas une sauvegarde TachSync.',
+    incompleteArchive: 'Archive incomplète : {name} est absent.',
+    invalidJson: 'Fichier illisible : ce n’est pas du JSON valide.',
+    unexpectedObject: 'Fichier inattendu : un objet de réglages était attendu.',
+    foreignBackup: 'Ce fichier n’est pas une sauvegarde TachSync (« {format} »).',
+    unknownAvatarFormat: 'Format non reconnu (« .{ext} »). Attendu : .riv, .glb ou .gltf.',
+    avatarTooLarge: 'Fichier trop lourd ({size} Mo). Limite : 64 Mo.',
+    notAnImage: 'Ce fichier n’est pas une image !',
+    imageTooLarge: 'Image trop lourde : {size} Mo (max 16).',
+    noTilesFound: 'Aucune tuile ni fond trouvés dans ce fichier.',
+    storageUnavailable: 'Stockage indisponible.',
+    notAnEntity: 'Ce fichier ne vient pas de TachSync.',
+    wrongEntityKind: 'Ce fichier ne contient pas de {kind}.',
+    unreadableAvatarFile: 'Le fichier d’avatar n’a pas pu être lu.',
+    notRiveDocument: 'Ce fichier n’est pas un document Rive.',
+    riveDecodeFailed: 'Rive n’a pas su décoder ce fichier.',
+    riveNoStateMachine: 'Ce fichier Rive n’a pas de machine à états : rien ne peut être animé.',
+    notGltfModel: 'Ce fichier n’est pas un modèle glTF binaire.',
+    gltfDecodeFailed: 'Ce modèle n’a pas pu être décodé.',
+  },
+};

@@ -1,0 +1,59 @@
+# Builds the site and publishes it to GitHub Pages.
+#
+# A project page is served from `/<repo>/`, never the root, so the build is told where it will live
+# through `BASE_PATH`. The name is taken from the repository itself rather than written down: a
+# rename would otherwise produce a site whose every asset points at the old address.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  # Lets a deployment be re-run from the Actions tab without pushing anything.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one in flight: a half-published site is worse than an
+# old one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # `ci` rather than `install`: it installs exactly the lock file, and fails instead of
+      # silently updating it.
+      - run: npm ci
+
+      - run: npm test
+
+      - name: Build
+        env:
+          BASE_PATH: /${{ github.event.repository.name }}/
+        run: npm run build
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,340 @@
+// The board: three stacked grids, the drag states and the edit lattice.
+
+.board {
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  // Without this the browser claims the gesture as a scroll and dragging a
+  // tile becomes impossible.
+  touch-action: none;
+  // The selection callout is not an event one can refuse: WebKit and the Android WebView raise it
+  // from the long press itself, before `contextmenu` is ever dispatched.
+  -webkit-touch-callout: none;
+
+}
+
+// The keyboard's way into the settings.
+//
+// Out of sight and out of the layout until Tab reaches it, then a plain button in the corner. A
+// pointer never focuses it, so it never appears while driving.
+.board__skip {
+  position: absolute;
+  z-index: 20;
+  top: calc(env(safe-area-inset-top) + 0.5rem);
+  left: calc(env(safe-area-inset-left) + 0.5rem);
+  // Not `display: none`, which would take it out of the focus order entirely.
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  font: inherit;
+  font-size: 0.85rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-full);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  cursor: pointer;
+
+  &:focus-visible {
+    width: auto;
+    height: auto;
+    min-height: var(--control-h);
+    padding: 0 1rem;
+    clip-path: none;
+    outline: 3px solid var(--ui-accent);
+    outline-offset: 2px;
+  }
+}
+
+// Three superposed grids sharing one lattice, transparent to pointers so a
+// finger on an empty area always reaches the board and its long press.
+//
+// The grid sets neither gutter nor margin: it divides the screen edge to edge
+// and stops there. All spacing comes from the margin each tile asks for, so the
+// rhythm of the board is set by the tiles rather than imposed on them.
+//
+// Notches are the one exception — they are no aesthetic choice, and content
+// slipped under them would simply be invisible.
+.layer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--cols), 1fr);
+  grid-template-rows: repeat(var(--rows), 1fr);
+  gap: 0;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+  grid-auto-flow: row dense;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+// Inactive layers fade and let the finger through, so tapping an overlap
+// unambiguously reaches the active layer.
+.board--unlocked {
+  .layer--inactive {
+    opacity: 0.3;
+  }
+
+  .layer--active .tile {
+    pointer-events: auto;
+    cursor: grab;
+  }
+}
+
+// Landing slot: the original tile stays in place, emptied, showing where the
+// content lands if released now.
+.tile--ghost {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+// Freshly created tile, still waiting for a metric.
+.tile--empty {
+  border-style: dashed;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+// Doubled selector to outrank the margin on `.tile`: dnd-kit sizes its layer on
+// the original's box, margin excluded, so keeping the margin here would offset
+// the copy by exactly that much.
+.tile.tile--floating {
+  margin: 0;
+}
+
+.tile--floating {
+  width: 100%;
+  height: 100%;
+  scale: 1.04;
+  opacity: 0.94;
+  cursor: grabbing;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.55),
+    0 0 0 1px color-mix(in srgb, var(--accent) 60%, transparent);
+
+  // No slot available: the refusal must read before the finger lifts.
+  &.is-invalid {
+    box-shadow:
+      0 18px 40px rgba(0, 0, 0, 0.55),
+      0 0 0 2px var(--danger);
+  }
+}
+
+// Edit lattice.
+//
+// It draws the grid, never the tiles: plain rectangles on the cells themselves,
+// no margin and no rounding, therefore touching. A tile may be rounded,
+// bevelled or surrounded by air — the lattice stays the same regular mesh, and
+// one reads the true footprint rather than the silhouette of the artwork.
+.cell-slot {
+  pointer-events: none;
+  border: 1px dashed color-mix(in srgb, var(--text-muted) 35%, transparent);
+
+  // Footprint of a placed tile: same lattice, one shade stronger.
+  &--used {
+    border-color: color-mix(in srgb, var(--text-muted) 55%, transparent);
+  }
+}
+
+// The new-vehicle notification.
+//
+// The vocabulary of a notification rather than a pill: light corners, left-aligned text, uniform
+// outline. It is itself the button - a single target can be hit without looking.
+//
+// Only the bar at the top carries the accent: two marks of the same colour on two sides competed
+// for attention, when only one says something - the time left.
+//
+// Its measure is that of the settings window, which it opens: two surfaces of close but different
+// widths read as a misalignment.
+.introduction {
+  position: fixed;
+  z-index: 20;
+  top: max(0.6rem, env(safe-area-inset-top));
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: min(30rem, 94vw);
+  font: inherit;
+  text-align: left;
+  padding: var(--sp-4);
+  overflow: hidden;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-md);
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  animation: introduction-in 420ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+
+  &.is-leaving {
+    animation: introduction-out 420ms cubic-bezier(0.4, 0, 0.9, 0.4) forwards;
+  }
+}
+
+// The remaining-time bar, at the top and full width.
+//
+// It empties right to left by a transform rather than a width: an animated width redoes layout on
+// every frame, where a transform only needs a repaint.
+.introduction__life {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  background: var(--ui-accent);
+  transform-origin: left center;
+  animation: introduction-life var(--introduction-life, 8000ms) linear forwards;
+}
+
+.introduction__title {
+  font-size: 0.9rem;
+  font-weight: var(--fw-semibold);
+}
+
+// The gesture and its consequence in one dimmed sentence: the title announces, this explains. Two
+// lines of equal weight under a title make three things to read when there is only one to
+// understand.
+.introduction__hint {
+  font-size: 0.78rem;
+  color: var(--ui-text-muted);
+}
+
+// Entrance and exit, exactly inverse.
+//
+// The translation occupies the whole duration; opacity plays at the other end. On exit it fades out
+// in the first third, so the notification has already gone by the time it passes behind the edge -
+// it is never seen being clipped. On entrance it fades in during the last third, for the same
+// reason read backwards.
+@keyframes introduction-in {
+  from {
+    translate: -50% -140%;
+    opacity: 0;
+  }
+
+  66% {
+    opacity: 0;
+  }
+
+  to {
+    translate: -50% 0;
+    opacity: 1;
+  }
+}
+
+@keyframes introduction-out {
+  from {
+    translate: -50% 0;
+    opacity: 1;
+  }
+
+  34% {
+    opacity: 0;
+  }
+
+  to {
+    translate: -50% -140%;
+    opacity: 0;
+  }
+}
+
+@keyframes introduction-life {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .introduction,
+  .introduction.is-leaving {
+    animation-duration: 1ms;
+  }
+}
+
+// Ambience drifts with the driving mode.
+//
+// Slowly, which is the whole point: the mode reads over a minute, and the decor takes the same time
+// to follow. A transition of several seconds makes the change imperceptible in the moment and
+// obvious over time.
+//
+// One quantity drives it all, the glow: a theme without one therefore stays without one in sport,
+// which is the right answer - ambience amplifies the theme, it does not replace it.
+@property --drive-intensity {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+:root {
+  --drive-intensity: 1;
+  transition: --drive-intensity 6s linear;
+}
+
+:root[data-drive='eco'] {
+  --drive-intensity: 0.55;
+}
+
+:root[data-drive='sport'] {
+  --drive-intensity: 1.6;
+}
+
+.board {
+  --tile-glow: calc(var(--theme-glow, 1) * var(--drive-intensity));
+}
+
+// The keyboard legend.
+//
+// Hidden until a tile holds keyboard focus, which `:has()` answers without a line of state. A
+// pointer never focuses a tile that way, so it never appears while driving.
+//
+// It sits opposite the edit bar so the two never meet, whichever edge the bar has been thrown to.
+.board__legend {
+  position: absolute;
+  z-index: 15;
+  left: calc(env(safe-area-inset-left) + 0.5rem);
+  bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+  display: none;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 0.2rem 0.7rem;
+  margin: 0;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-md);
+  background: var(--ui-surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  font-size: 0.72rem;
+  color: var(--ui-text-muted);
+  pointer-events: none;
+
+  dt {
+    justify-self: end;
+    padding: 0.1rem 0.4rem;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--ui-bg) 55%, transparent);
+    color: var(--ui-text);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  dd {
+    margin: 0;
+  }
+}
+
+.board:has([data-tile-id]:focus-visible) .board__legend {
+  display: grid;
+}
+
+// The bar docked low would sit on top of it; the legend steps aside rather than the other way
+// round, the bar being where the hands go.
+.board:has(.edit-bar--bottom) .board__legend {
+  bottom: calc(env(safe-area-inset-bottom) + 4.5rem);
+}

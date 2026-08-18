@@ -1,0 +1,681 @@
+// The settings panel and its avatar picker.
+
+// A measure, not the full available width. Spread over 1280 px, three control blocks left dead
+// space bottom right and made the eye cross the screen between two related fields.
+.settings__grid,
+.settings__box {
+  width: 100%;
+  max-width: 64rem;
+  margin-inline: auto;
+}
+
+// Settings as a pause menu: a rail that chooses, a pane that shows.
+//
+// Showing everything at once made every setting equally visible, therefore none salient, and each
+// addition worsened the clutter.
+.pause {
+  // A narrow centred column: the menu fills the modal, the chosen section replaces it. One level on
+  // screen at a time.
+  width: 100%;
+  max-width: 28rem;
+  margin-inline: auto;
+  // Reserves the height of a full menu; without it, moving between sections would make the modal
+  // jump every time.
+  //
+  // It also acts as spare room: the language button is pushed to the bottom by an automatic margin,
+  // which creates nothing and only consumes what is left. Too tight and the gap detaching it from
+  // the list closes up.
+  min-height: 24rem;
+  // Column, so the menu can fill the reserved height and push the language button to the bottom.
+  display: flex;
+  flex-direction: column;
+
+  &__menu {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    flex: 1;
+  }
+
+  // Pushed to the foot by the automatic margin, which consumes whatever the list left over.
+  &__files {
+    display: flex;
+    gap: var(--sp-3);
+    margin-top: auto;
+
+    // Equal halves, so neither reads as the main one. A single entry takes the width alone rather
+    // than sitting half-width beside a gap.
+    .pause__item {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  &__back {
+    font: inherit;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    align-self: flex-start;
+    min-height: var(--control-h);
+    padding: 0 var(--sp-3) 0 var(--sp-2);
+    margin-bottom: var(--sp-3);
+    border: none;
+    border-radius: var(--r-md);
+    background: none;
+    color: var(--ui-text);
+    font-weight: var(--fw-semibold);
+    cursor: pointer;
+
+    &:hover {
+      background: color-mix(in srgb, var(--ui-text) 8%, transparent);
+    }
+  }
+
+  // Real buttons, centred. As plain left-aligned text nothing said they were clickable: a list is
+  // read, a button is actuated.
+  &__item {
+    font: inherit;
+    font-size: 1rem;
+    text-align: center;
+    min-height: var(--control-h);
+    padding: 0 var(--sp-4);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--ui-text) 6%, transparent);
+    color: var(--ui-text);
+    cursor: pointer;
+    transition:
+      border-color 0.14s ease,
+      background 0.14s ease;
+
+    &:hover {
+      border-color: var(--ui-accent);
+      background: color-mix(in srgb, var(--ui-accent) 14%, transparent);
+    }
+
+    // The toggling button acts instead of opening: the accent tint says so, as it does for the
+    // language button.
+    &--toggle {
+      color: var(--ui-accent);
+      border-color: color-mix(in srgb, var(--ui-accent) 45%, transparent);
+    }
+  }
+
+  // The pane fills the height the menu reserved. Without this a short section bunched at the top
+  // and left the rest empty.
+  &__panel {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  // A field alone in the pane - the avatar picker - takes the height it is given, having no
+  // neighbours to share it with. Other sections wrap their fields in a group and are unaffected.
+  &__panel > .field {
+    flex: 1;
+  }
+
+  // The cycling button is centred like the other controls, despite the left alignment the settings
+  // impose on labels: it is a button, not a label.
+  .cycle-button {
+    justify-content: center;
+  }
+
+  // Labels flush left, in the settings only.
+  //
+  // Elsewhere - the edit modal - fields are centred in narrow columns and a centred label caps its
+  // control. Here controls span the full window width: a label centred above a 29 rem field floats
+  // unattached, where flush left it marks the start of what it names.
+  .field {
+    align-items: stretch;
+    text-align: left;
+  }
+}
+
+// Backup: the warning centred, the actions at the foot. Same arrangement as the avatar section -
+// one object to show, so it fills the space and what acts stays under the thumb.
+.backup {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+
+  &__notice {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-3);
+    text-align: center;
+  }
+
+  &__warning {
+    font-size: var(--fs-body);
+    font-weight: var(--fw-semibold);
+    color: var(--ui-text);
+    max-width: 20rem;
+  }
+}
+
+// The warning triangle.
+//
+// Each colour carries its own halo: red diffuses the alert, white detaches the sign. A single halo
+// would have merged them.
+.warning {
+  width: 9rem;
+  height: auto;
+  flex: none;
+  // An `<svg>` clips to its bounds by default and the halo spills past the path: without this it
+  // was cut off flush with the triangle, which read as a rendering fault rather than a glow.
+  overflow: visible;
+
+  &__triangle {
+    // Thick outline rather than solid: the sign reads in the space it delimits, instead of sitting
+    // on a flat area competing for attention.
+    fill: none;
+    stroke: var(--ui-danger);
+    stroke-width: 4.6;
+    stroke-linejoin: round;
+    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--ui-danger) 70%, transparent));
+  }
+
+  &__mark {
+    stroke: #fff;
+    stroke-width: 3.4;
+    stroke-linecap: round;
+    fill: none;
+    filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.75));
+  }
+
+  &__dot {
+    fill: #fff;
+    stroke: none;
+  }
+}
+
+// The two actions under the avatar picker.
+//
+// They cannot inherit `.settings__row`: the avatar picker is not inside a `.settings__group`, so
+// the rule equalising a row's children does not reach it. Declared here, they share the width
+// explicitly - two opposite actions at different sizes are harder to aim at, and the one missed is
+// the one that erases.
+.avatar-actions {
+  display: flex;
+  gap: var(--sp-2);
+  // Detached from the frame: flush against it they read as its continuation, whereas they act on
+  // what it selected.
+  margin-top: var(--sp-4);
+  // Full width, like the two backup buttons.
+  width: 100%;
+
+  > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+.settings {
+  // Self-contained blocks that sit side by side as soon as there is width. Each stands on its own,
+  // so the wrapping order on a narrow screen needs no thought.
+  //
+  // Two columns, not three: the three blocks measured 379, 172 and 73 px, leaving dead space a
+  // third of the panel wide. Stacking the two short ones puts the columns at 379 against 260.
+  //
+  // Dropping to one column stays automatic below the minimum measure, which is the portrait case.
+  &__grid {
+    display: grid;
+    gap: var(--sp-5);
+    grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    align-items: start;
+  }
+
+  // Right column: the short blocks, stacked.
+  &__stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+    min-width: 0;
+  }
+
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+
+    > h3 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+  }
+
+  // Backup adjusts nothing: it moves the entire configuration in or out. The
+  // frame sets it apart so it is not triggered in passing.
+  &__box {
+    border: 1px solid var(--tile-border);
+    border-radius: var(--r-md);
+    padding: 0.9rem;
+    background: color-mix(in srgb, var(--text-muted) 7%, transparent);
+    align-items: center;
+    text-align: center;
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    // The row takes its group's width.
+    //
+    // Without this it sizes to its content - groups centre it - and its children's `flex: 1` has
+    // nothing left to share: the avatar import button stayed an 88 px pill amid full-width
+    // controls.
+    width: 100%;
+    // Preserves the centring of the two backup buttons, which do not stretch: those are actions,
+    // not settings.
+    justify-content: center;
+  }
+
+  // Inside a column, controls share its width. A pill sized to its own label breaks the edge the
+  // other fields hold. The backup frame is the exception: its two buttons are centred actions.
+  &__group:not(&__box) &__row > * {
+    flex: 1;
+  }
+
+  // A `.chip` is `inline-flex`: it sizes to its label and leaves a floating edge in a column of
+  // full-width fields.
+  &__group:not(&__box) > .chip {
+    align-self: stretch;
+  }
+
+  &__hint {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+}
+
+// In portrait the frame drops to the foot of the panel. The automatic margin
+// soaks up the free room and collapses to zero as soon as content overflows, so
+// "if the screen is tall enough" comes for free, with nothing measured.
+@media (orientation: portrait) {
+  .settings__box {
+    margin-top: auto;
+  }
+}
+
+// Avatar picker: one outline wraps both arrows and the middle, with no visible
+// joint. Three separate boxes read as three independent controls when there is
+// only one.
+.avatar-picker {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+
+  &__arrow {
+    // A drawn path centres itself in a flexible box; no font metric is involved.
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6rem;
+    flex: none;
+    border: none;
+    background: color-mix(in srgb, var(--ui-text-muted) 10%, transparent);
+    color: var(--ui-text);
+    cursor: pointer;
+
+    .icon {
+      width: 1.1rem;
+      height: 1.1rem;
+    }
+
+    &:hover {
+      color: var(--ui-accent);
+    }
+  }
+
+  // Name and rank on one line. Stacked, they forced twice the height of the
+  // scale control for two pieces of information that fit side by side.
+  &__current {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--control-h);
+    display: flex;
+    align-items: center;
+    // Name at one edge, rank at the other: pulling them together would make
+    // them read as a single string.
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0 0.9rem;
+  }
+
+  &__name {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    // A flex item refuses by default to shrink below its content; without this
+    // a long name would push the rank out instead of eliding.
+    min-width: 0;
+    // Trimming stops the box at the baseline, and `overflow: hidden` — required
+    // by the ellipsis — then beheaded the descenders. The padding gives the room
+    // back and the negative margin cancels its effect on layout, so tails
+    // reappear without the centring moving.
+    padding-bottom: 0.25em;
+    margin-bottom: -0.25em;
+  }
+
+  &__meta {
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    color: var(--ui-text-muted);
+    font-variant-numeric: tabular-nums;
+    // The rank never elides; the name yields instead.
+    flex: none;
+  }
+}
+
+.layer-summary {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--tile-border);
+    border-radius: 8px;
+  }
+
+  &__count {
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  // Stays at the right edge even when the name has wrapped it to a new line.
+  .chip {
+    margin-left: auto;
+  }
+}
+
+// Avatar preview, above its picker.
+//
+// A fixed height and a wide ratio: an avatar is composed for a board tile, and showing it in a
+// narrow frame would misrepresent it. No background of its own - the modal's decor stays visible
+// behind, as it will behind the character on the board.
+.avatar-preview {
+  position: relative;
+  width: 100%;
+  // Takes all remaining room rather than a fixed height: the section having a single setting, the
+  // preview should fill the space and what follows locks to the foot of the window.
+  flex: 1;
+  min-height: 11rem;
+  margin-bottom: var(--sp-3);
+  // Flex container rather than block: the avatar stage sizes itself with `height: 100%`, and a
+  // percentage resolves against the parent's *declared* height. Here that comes from flex
+  // distribution, so `auto` - and the stage collapsed to zero. In flex, cross-axis stretch fills it
+  // without any height being named.
+  display: flex;
+  // An avatar's container measures its stage: without this declaration the composition would not
+  // know how much room it has.
+  container-type: size;
+
+  // The stage declares `height: 100%`, which beats the flex stretch and sends it back to the
+  // impossible percentage above. Reset to `auto`, it stretches and fills the room actually
+  // available.
+  .avatar-stage {
+    height: auto;
+  }
+}
+
+// A group filling the pane height, so what belongs at the bottom stays there. Same mechanism as the
+// avatar and backup sections.
+.settings__group--filled {
+  flex: 1;
+}
+
+// Board actions, locked to the foot and detached from the dimensions. Adjusting a grid and
+// switching to editing are different in kind; stacked without a gap, the second fired while the
+// user thought they were still doing the first.
+.board-actions {
+  // Stacked and full width: side by side they would have shrunk, and these are the two most
+  // consequential controls in the section.
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: auto;
+  padding-top: var(--sp-4);
+}
+
+.grid-size {
+  display: flex;
+  gap: var(--sp-2);
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ui-text-muted);
+    text-align: center;
+  }
+
+  // The stepper fills its column. As `inline-flex` it sized to its content and left a gap in the
+  // frame, to the right of the `+`.
+  &__item .scale {
+    display: flex;
+    width: 100%;
+  }
+
+  &__item .scale__value {
+    flex: 1;
+    text-align: center;
+  }
+}
+
+// Report of an import or a backup, in the settings.
+//
+// The catalogue replaced its own with a transient tooltip. Here the framed block keeps its meaning:
+// the panel stays open after the operation, and the report must be re-readable.
+.report {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ui-text);
+  background: color-mix(in srgb, var(--ui-accent) 12%, transparent);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-sm);
+  padding: 0.6rem 0.8rem;
+}
+
+// An identity section: the name, the lists, the actions at the foot. Blocks separate as everywhere
+// else in the settings, and controls sit at the bottom so what acts stays under the thumb.
+.profiles {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-height: 0;
+
+  // The lists scroll rather than push the buttons off screen: nothing bounds the number of people
+  // or vehicles.
+  .picker {
+    max-height: 11rem;
+    overflow-y: auto;
+  }
+
+  // Duplicate and delete side by side, unlike the rest of the settings: two brief gestures of equal
+  // weight applied to the entity just chosen above. Stacked, they took a block's height and
+  // outweighed the list they serve.
+  //
+  // The two scales sit side by side for the same reason.
+  &__ranges {
+    display: flex;
+    gap: var(--sp-4);
+
+    > * {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+
+  // The foot is a group rather than an element designated by position: it holds two or three
+  // depending on the entity, and two automatic margins would have shared the space instead of
+  // pushing it up.
+  &__footer {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+  }
+
+  .board-actions {
+    flex-direction: row;
+    // No margin or padding of its own: the gap with the rename field is the one the section gives
+    // all its blocks. The inherited inset added to it and made these two neighbours the furthest
+    // apart in the panel, though they concern the same thing.
+    margin-top: 0;
+    padding-top: 0;
+
+    .chip {
+      flex: 1;
+    }
+  }
+}
+
+// The last calibration, one finding per row: label left, value right.
+//
+// Rows rather than the centred block around them. Four labelled values are a table, and a table is
+// read down its left edge - centring them would have made the eye hunt for where each line starts.
+.calib-recap {
+  display: grid;
+  width: 100%;
+  margin: 0.4rem 0 0;
+  text-align: left;
+
+  div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.55rem 0.1rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--ui-text) 12%, transparent);
+  }
+
+  // Nothing under the last row: a rule with no row beneath it reads as a missing entry.
+  div:last-child {
+    border-bottom: none;
+  }
+
+  dt {
+    font-size: 0.85rem;
+    opacity: 0.7;
+  }
+
+  dd {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: var(--fw-semibold);
+    text-align: right;
+  }
+}
+
+// The calibration dial, sized and lit like the warning triangle it stands in for. Same slot in the
+// same layout, so the two sections read as siblings rather than as one being an afterthought.
+//
+// Accent rather than danger: this section reports, it does not caution.
+.calibrate {
+  width: 9rem;
+  height: auto;
+  flex: none;
+  overflow: visible;
+
+  &__arc {
+    stroke: var(--ui-accent);
+    filter: drop-shadow(0 0 7px color-mix(in srgb, var(--ui-accent) 65%, transparent));
+  }
+
+  &__needle {
+    stroke: #fff;
+  }
+
+  &__hub {
+    fill: #fff;
+  }
+}
+
+// The drop zone fills the panel, dashed to its edges.
+//
+// It carries `backup__notice` too, which already centres its contents in whatever height is left;
+// this only adds the border and the target behaviour. Dashed rather than solid: a dashed edge says
+// "put something here" without a word, where a solid one reads as a panel, and a panel is not a
+// target.
+.transfer__zone {
+  border: 2px dashed color-mix(in srgb, var(--ui-text) 26%, transparent);
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+  cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+
+  &:hover,
+  &:focus-within,
+  &.is-over {
+    border-color: var(--ui-accent);
+    background: color-mix(in srgb, var(--ui-accent) 10%, transparent);
+  }
+
+  // The input is hidden, so the ring has to appear on the frame that stands for it.
+  &:focus-within {
+    outline: 2px solid var(--ui-accent);
+    outline-offset: 3px;
+  }
+}
+
+// Sized and lit like the warning triangle of the backup section: same slot, same weight, so the two
+// panels read as siblings. Accent rather than danger - this one invites, it does not caution.
+//
+// The stroke is set here rather than in the drawing: these icons are drawn for a 24 px button, and
+// a 1.8 stroke blown up to nine rem would come out as a hairline beside the triangle's 4.6.
+.transfer__icon .icon {
+  inline-size: 9rem;
+  block-size: 9rem;
+  overflow: visible;
+  stroke: var(--ui-accent);
+  stroke-width: 1.3;
+  filter: drop-shadow(0 0 7px color-mix(in srgb, var(--ui-accent) 60%, transparent));
+}
+
+.transfer__hint {
+  // It sits between the frame and the button; without the top margin it touched the dashed edge
+  // and read as part of it.
+  //
+  // Centred both ways: the automatic side margins centre the box, which `max-width` keeps narrower
+  // than the panel, and `text-align` centres the lines inside it. Left as it was it hung on the
+  // left edge under a frame and a button that are both centred.
+  margin: var(--sp-3) auto 0;
+  font-size: var(--fs-small);
+  line-height: 1.45;
+  max-width: 22rem;
+  text-align: center;
+  opacity: 0.72;
+}

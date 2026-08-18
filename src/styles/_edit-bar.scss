@@ -1,0 +1,215 @@
+// Edit controls, in a capsule floating below the top edge.
+//
+// One shape rather than three overlapping tabs. The previous drawing cited a browser tab bar - a
+// metaphor for documents where this is a toolbox - and gave equal weight to three actions of
+// different kinds.
+//
+// Group opacity went with it: fading a block of controls dilutes its text. What lifts the capsule
+// off the board is its shadow and its hairline, not transparency.
+
+.edit-bar {
+  // 44 px inside: Apple's minimum, Google's being 48. The capsule adds its own padding on top.
+  --edit-target: 2.75rem;
+  --edit-inset: 0.25rem;
+
+  position: absolute;
+  z-index: 12;
+  // Below the edge rather than attached to it: the capsule floats, so its shadow needs some sky
+  // above to be seen.
+  top: calc(env(safe-area-inset-top) + 0.5rem);
+  display: flex;
+  align-items: center;
+  gap: var(--edit-inset);
+  padding: var(--edit-inset);
+  border: 1px solid var(--ui-border);
+  border-radius: var(--r-full);
+  background: var(--ui-surface);
+  // Cast and diffuse: this is what places the capsule above the board now that nothing is
+  // translucent.
+  box-shadow:
+    0 10px 30px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+// On a light background the same shadow looks dirty. A black shadow assumes a dark scene to blend
+// into; on off-white it greys its surroundings instead of suggesting height. Same geometry, a
+// fraction of the density.
+:root[data-appearance='light'] .edit-bar {
+  box-shadow:
+    0 10px 30px rgba(15, 23, 42, 0.13),
+    0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+// Anchored in a corner, the bar ended up biting into the rest as the screen narrowed. Centred, it
+// has no neighbour to hit.
+//
+// `translate` rather than `transform`: the property is independent, so centring, docking and
+// dragging fit in one declaration without fighting.
+//
+// Both edges are expressed in the same frame, which is what makes moving between them animatable:
+// the bar stays anchored at the top by `top`, and the bottom is only an offset. Changing the anchor
+// from `top` to `bottom` would teleport the element before the transition began.
+.edit-bar {
+  left: 50%;
+  translate: -50% calc(var(--dock-y, 0px) + var(--drag-y, 0px));
+  transition: translate 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  // The gesture belongs to the bar: without this the browser reads it as the start of a scroll and
+  // the drag never happens.
+  touch-action: none;
+}
+
+// The bottom edge, computed without measuring anything.
+//
+// A `translate` percentage refers to the element's own box, so this `100%` is the bar's height,
+// which the code need not know. The rest is the visible height minus the safe-area insets and the
+// two half-rem of breathing room.
+.edit-bar--bottom {
+  --dock-y: calc(
+    100dvh - 100% - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 1rem
+  );
+}
+
+// While dragging, the bar follows the finger without damping. A transition here would make it lag
+// behind the thumb, which reads as latency rather than inertia.
+.edit-bar--dragging {
+  transition: none;
+  cursor: grabbing;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .edit-bar,
+  .edit-bar__thumb {
+    transition-duration: 1ms;
+  }
+}
+
+// Shared base for the three controls.
+%edit-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  min-height: var(--edit-target);
+  min-width: var(--edit-target);
+  padding: 0;
+  border: none;
+  border-radius: var(--r-full);
+  background: none;
+  color: var(--ui-text);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+// Add: filled with the accent. It is the action this mode is entered for, and the only one that
+// creates something.
+.edit-bar__primary {
+  @extend %edit-control;
+
+  background: var(--ui-accent);
+  color: var(--ui-on-accent);
+
+  &:hover,
+  &:focus-visible {
+    background: color-mix(in srgb, var(--ui-accent) 82%, white);
+  }
+}
+
+// The layer segmented control, on its own rail.
+.edit-bar__layers {
+  // Positioning context for the thumb, which sits inside it absolutely.
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  // A little air after the add button, with no hairline. The filled pill already separates itself
+  // by colour, so a stroke there said the same thing twice. The exit keeps its own - nothing else
+  // distinguishes it from the tools.
+  margin-left: 0.15rem;
+  border-radius: var(--r-full);
+  // A rail barely darker than the capsule, grouping the three choices without another frame.
+  // No padding, deliberately: two pixels would come off the segment height and drop it to 40 px,
+  // below the 44 px minimum.
+  background: color-mix(in srgb, var(--ui-bg) 55%, transparent);
+}
+
+// A single selection thumb that moves.
+//
+// Three fills switching on and off give a change with no connection: the selection disappears one
+// side and reappears the other, and nothing says it is the same one. A sliding thumb ties the
+// gesture to its result.
+//
+// Width animates with position because the segments differ in width: otherwise the thumb would
+// arrive in the right place at the wrong size, then snap.
+.edit-bar__thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--thumb-w);
+  translate: var(--thumb-x) 0;
+  border-radius: var(--r-full);
+  background: var(--ui-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  // The same easing as the bar's entrance: a slight overshoot that settles, rather than a linear
+  // dialog-box slide.
+  transition:
+    translate 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.edit-bar__layer {
+  @extend %edit-control;
+
+  // Above the thumb, which passes underneath without hiding them.
+  position: relative;
+  min-width: 0;
+  padding: 0 0.7rem;
+  color: var(--ui-text-muted);
+
+  &:hover:not(.is-active) {
+    color: var(--ui-text);
+  }
+
+  // The ink changes slightly faster than the thumb arrives, so the label is already legible when
+  // the fill lands under it.
+  &.is-active {
+    color: var(--ui-text);
+  }
+}
+
+// The hairline that sets the exit apart. Leaving is not a tool: it is what one does when finished
+// using them.
+.edit-bar__divider {
+  align-self: stretch;
+  width: 1px;
+  margin: 0.5rem 0.15rem;
+  background: var(--ui-border);
+}
+
+.edit-bar__done {
+  @extend %edit-control;
+
+  color: var(--ui-text-muted);
+
+  &:hover,
+  &:focus-visible {
+    background: color-mix(in srgb, var(--ui-text) 12%, transparent);
+    color: var(--ui-text);
+  }
+}
+
+// Narrow screens: labels tighten rather than the target shrinking. Reading comfort gives way first,
+// never the surface to hit with a finger.
+@media (max-width: 420px) {
+  .edit-bar__layer {
+    padding: 0 0.45rem;
+    font-size: 0.76rem;
+  }
+}

@@ -1,0 +1,110 @@
+// Trip history, in the settings.
+
+.trips {
+  // Takes the pane's full height so its controls sit at the foot, like backup and board.
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+
+  // Detached from the list above it, like every other block that follows one.
+  //
+  // `.trips` has no gap of its own - the list must reach the pane's edges - so the spacing other
+  // sections get from `.settings__group` is asked for here. Same measure, 0.75rem.
+  &__setting {
+    margin-top: var(--sp-3);
+  }
+
+  // Centred like the setting it explains, and narrower than the pane so lines break where a
+  // sentence would. Both halves are needed: `.trips` stretches its children, so centring the text
+  // alone would leave the block itself hard against the left.
+  &__note {
+    margin: var(--sp-2) auto 0;
+    max-width: 22rem;
+    text-align: center;
+  }
+
+  &__empty {
+    // Alone in the pane, the message fills the space rather than bunching at the top: an empty
+    // section starting with one isolated line reads as a load that never finished.
+    flex: 1;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    font-size: var(--fs-body);
+    color: var(--ui-text-muted);
+  }
+
+  &__list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: var(--sp-3);
+    border: 1px solid var(--ui-border);
+    border-radius: var(--r-md);
+    background: color-mix(in srgb, var(--ui-text) 4%, transparent);
+  }
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2);
+  }
+
+  &__date {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tr-overline);
+    color: var(--ui-text-muted);
+  }
+
+  // Marks the demonstration trip. Discreet but present: without it a simulator run would read as a
+  // real drive.
+  &__badge {
+    margin-left: auto;
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tr-overline);
+    color: var(--ui-accent);
+    padding: 0.1rem 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--ui-accent) 45%, transparent);
+    border-radius: var(--r-full);
+  }
+
+  // The figures on one line, separated by a middot.
+  //
+  // Distance leads in bold: it is what is looked for while scanning the list, the rest is only read
+  // once the trip is found.
+  &__figures {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.5rem;
+    font-size: var(--fs-body);
+    font-variant-numeric: tabular-nums;
+    color: var(--ui-text-muted);
+
+    span:first-child {
+      font-weight: var(--fw-semibold);
+      color: var(--ui-text);
+    }
+
+    span + span::before {
+      content: '·';
+      margin-right: 0.5rem;
+      color: var(--ui-border);
+    }
+  }
+}

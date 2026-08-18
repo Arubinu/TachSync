@@ -1,0 +1,616 @@
+// Tiles and their contents.
+
+// Text sizes are multiplied by both the global scale and the tile's own, so one
+// screen can be legible from afar on a dash-mounted tablet and up close on a
+// phone.
+@function scaled($min, $preferred, $max) {
+  @return calc(
+    clamp(#{$min}, #{$preferred}, #{$max}) * var(--font-scale, 1) * var(--tile-font-scale, 1)
+  );
+}
+
+.tile {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+
+  // A fixed skeleton — overline, value, readout — rather than a flex column
+  // that rearranges itself with whatever parts a metric happens to provide.
+  // Four tiles used to show three different internal layouts, which is what
+  // made a screen of them read as assembled rather than designed. The middle
+  // row takes the slack, so the value lands at the same optical height in every
+  // tile of a row whether or not it carries a gauge underneath.
+  display: grid;
+  // Tracks come from the theme: stacked by default, inline for themes designed for wide, low tiles.
+  // See `themeToTileVariables`.
+  grid-template-columns: var(--tile-cols, minmax(0, 1fr));
+  grid-template-rows: var(--tile-rows, auto 1fr auto);
+  grid-auto-rows: auto;
+  gap: var(--sp-1);
+  padding: var(--tile-padding);
+  // The grid's only source of spacing - see the note on `.layer`.
+  //
+  // The tile decides first, the theme is the fallback: `--tile-spacing` is only set if the user
+  // adjusted it, otherwise the `var()` fallback hands back to the theme margin. A pack author can
+  // also compute it, e.g. `calc(var(--tile-spacing, 0px) * 2)`.
+  margin: var(--tile-spacing, var(--tile-margin));
+  background: var(--tile-bg);
+  border: var(--tile-border-width) solid var(--tile-border);
+  border-radius: var(--tile-radius);
+  // The rim is what makes a translucent panel read as a surface catching light
+  // rather than as a hole cut in the background.
+  box-shadow: var(--rim);
+  backdrop-filter: blur(var(--tile-blur));
+  -webkit-backdrop-filter: blur(var(--tile-blur));
+  // Bevelled top-left and bottom-right: the technical HUD look. A theme cancels
+  // it by setting the variable to 0.
+  clip-path: polygon(
+    var(--tile-corner-cut) 0,
+    100% 0,
+    100% calc(100% - var(--tile-corner-cut)),
+    calc(100% - var(--tile-corner-cut)) 100%,
+    0 100%,
+    0 var(--tile-corner-cut)
+  );
+  // Makes the cq* units above resolve against the tile, so text is sized by the
+  // room it actually has in the grid rather than by the screen.
+  container-type: size;
+}
+
+// Undressed tile, used by the avatar so the screen background stays visible
+// behind the character with no rectangular cut-out.
+.tile--bare {
+  display: flex;
+  background: none;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  clip-path: none;
+  padding: 0;
+}
+
+.tile__label {
+  // A grid item shrinks below its content size as soon as the row runs out of room, and `overflow:
+  // hidden` then slices the letters horizontally. This floor makes that impossible: at worst the
+  // label bites into the value, which is visible and fixable, instead of producing half-erased text
+  // that looks like a rendering fault.
+  min-height: max-content;
+  // Stretched when stacked - it caps the tile; centred when inline, where it faces the value and
+  // must align with it.
+  align-self: var(--tile-label-self, stretch);
+  text-align: var(--tile-text-align, left);
+  // Markedly smaller and quieter. On reference clusters the ratio exceeds six to one: the word is
+  // there to remove a doubt, never to be read alongside the figure.
+  font-size: scaled(0.5rem, 8.5cqh, 0.7rem);
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--tr-overline);
+  color: color-mix(in srgb, var(--text-muted) 72%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Value and its gauge, held together and centred in the slack as one block.
+.tile__readout {
+  align-self: center;
+  display: grid;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.tile__value {
+  display: flex;
+  align-items: baseline;
+  // Right-aligned in the inline arrangement: the value then hugs the tile edge, and two stacked
+  // tiles form a column.
+  justify-content: var(--tile-value-justify, flex-start);
+  gap: 0.22em;
+  // A wide tile has height but rarely width once the figure is in place: tighter tracking fits
+  // three digits where normal width imposed two, without losing legibility from a distance.
+  font-stretch: 84%;
+  font-size: scaled(1.4rem, 54cqh, 6rem);
+  font-weight: var(--fw-bold);
+  line-height: 0.92;
+  // Large numerals set at default tracking read as loose; the correction has to
+  // grow with the size, hence an em-relative value rather than a pixel one.
+  letter-spacing: var(--tr-tighter);
+  color: var(--accent);
+  text-shadow: 0 0 calc(var(--tile-glow) * 28px) currentColor;
+  // Fixed-width digits, or the value jitters on every refresh.
+  font-variant-numeric: tabular-nums;
+
+  &--glyph {
+    justify-content: center;
+  }
+
+  // No reading: neither the size nor the halo of a real value. An em dash treated as a digit reads
+  // as a solid bar.
+  &--idle {
+    font-size: scaled(1rem, 22cqh, 2.5rem);
+    color: var(--text-muted);
+    text-shadow: none;
+    opacity: 0.5;
+  }
+}
+
+// Hierarchy.
+//
+// Nothing in a measurement says it matters more than another: the user decided that by giving it
+// room. Tile size is therefore the only reliable signal, and a container query listens to it
+// without any tile knowing where it sits.
+//
+// The lever is the halo, never the colour of the figure: dimming one value to promote another makes
+// the first less legible on a night road.
+@container (max-height: 200px) {
+  .tile__value {
+    text-shadow: 0 0 calc(var(--tile-glow) * 10px) currentColor;
+  }
+
+  .tile__label {
+    letter-spacing: 0.1em;
+  }
+}
+
+@container (min-height: 320px) {
+  .tile__value {
+    text-shadow:
+      0 0 calc(var(--tile-glow) * 18px) currentColor,
+      0 0 calc(var(--tile-glow) * 52px) currentColor;
+  }
+}
+
+.tile__unit {
+  font-size: scaled(0.5rem, 10cqh, 0.85rem);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  // Units sit on the numeral's baseline, which at this size difference leaves
+  // them looking dropped. Lifting to roughly the numeral's x-height is what a
+  // typesetter would do by hand.
+  transform: translateY(-0.12em);
+}
+
+.tile__secondaries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-4);
+  font-variant-numeric: tabular-nums;
+  font-size: scaled(0.55rem, 12cqh, 1rem);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.tile__secondary {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  white-space: nowrap;
+
+  &-label {
+    font-size: 0.72em;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+  }
+
+  &-unit {
+    font-size: 0.72em;
+    color: var(--text-muted);
+  }
+}
+
+// The gauge. Three things make it read as an instrument rather than a loading bar: height enough
+// to be seen from a dash mount, a track showing the range it measures against, and a colour that
+// means something.
+.tile__bar {
+  --gauge-ratio: 0;
+
+  position: relative;
+  display: block;
+  height: clamp(5px, 4cqh, 11px);
+  border-radius: var(--r-full);
+  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+  // Ticks mark the range so a short fill still says how short it is. Faint
+  // enough to stay out of the way of the value, which is what gets read.
+  background-image: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text-muted) 30%, transparent) 0 1px,
+    transparent 1px 10%
+  );
+  overflow: hidden;
+
+  &-fill {
+    display: block;
+    height: 100%;
+    // Drifts from the theme accent towards the danger colour as the needle
+    // climbs. The semantics come from the token, not the palette: a redline
+    // reads as a redline whichever theme is loaded.
+    background: color-mix(
+      in oklab,
+      var(--accent),
+      var(--sem-danger) calc(var(--gauge-ratio) * 78%)
+    );
+    transform-origin: left center;
+    transform: scaleX(0);
+    // Glow follows the value too, so a quiet dashboard stays quiet and a hard
+    // pull is visible in peripheral vision without reading a number.
+    box-shadow: 0 0 calc(var(--tile-glow) * var(--gauge-ratio) * 22px) currentColor;
+    color: var(--accent);
+  }
+}
+
+// Flush edges.
+//
+// `flushEdges` records on each tile which board edges it touches, settings included. Three things
+// give way on that side: the margin, without which the tile stops a gutter short of the edge; the
+// two corners, because a radius against a straight edge leaves two slivers of background; and the
+// hairline, which would otherwise run along the screen edge and read as a display fault.
+//
+// Inner padding does not move: a value flush against the edge of a phone would pass under the
+// panel's own rounding.
+//
+// A word selector (`~=`) rather than equality: the attribute lists sides, and a corner tile carries
+// two.
+.tile[data-flush~='top'] {
+  margin-top: 0;
+  border-top-width: 0;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.tile[data-flush~='bottom'] {
+  margin-bottom: 0;
+  border-bottom-width: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.tile[data-flush~='left'] {
+  margin-left: 0;
+  border-left-width: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.tile[data-flush~='right'] {
+  margin-right: 0;
+  border-right-width: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+// The bevel does not survive flush edges.
+//
+// It is cut from the whole tile by a `clip-path`, which knows nothing of sides: keeping the notch
+// against the screen edge would carve a triangle of background there, exactly what flush contact
+// removes.
+//
+// The attribute is written even when empty, for a tile touching nothing: without excluding that
+// case the rule would strip the bevel from the whole board.
+.tile[data-flush]:not([data-flush='']) {
+  clip-path: none;
+}
+
+// A round tile flush to an edge cannot stay round: the general rule above already flattens the
+// corners on the touching side, turning the disc into a half-disc against the edge.
+//
+// The dial's own trace stays circular and centred: it is an instrument, and distorting it to fit
+// the tile would falsify the reading.
+
+// Cramped tiles: catalogue thumbnails, dense grids.
+//
+// The full composition does not fit. Fixed costs - the gauge, the gutters, the value's size -
+// squeeze the label row until `overflow: hidden` cuts the letters through the middle. Everything
+// shrinks together rather than letting one part win.
+//
+// The query targets descendants only: a container cannot restyle itself, so the tile's own padding
+// is set where the small tile is created.
+@container (max-height: 150px) {
+  .tile__label {
+    font-size: scaled(0.5rem, 13cqh, 0.68rem);
+    // Enough to fit accents: at 1.15 the box fell two pixels below the real letter height.
+    line-height: 1.4;
+    letter-spacing: 0.1em;
+  }
+
+  .tile__value {
+    font-size: scaled(0.9rem, 34cqh, 2.2rem);
+  }
+
+  .tile__readout {
+    gap: 3px;
+  }
+
+  .tile__bar {
+    height: clamp(3px, 3cqh, 6px);
+  }
+
+  // Illegible at this size, and the first thing to overflow.
+  .tile__secondaries {
+    display: none;
+  }
+}
+
+
+// The dial.
+//
+// The value no longer precedes the gauge, it sits inside it: that is what separates a dial from a
+// bent bar. Both occupy the same cell, the trace underneath and the figure at the centre.
+.tile__readout--dial {
+  position: relative;
+  display: grid;
+  place-items: center;
+  // Takes the height it is given rather than the height of its figure.
+  //
+  // The trace being absolutely positioned pushes nothing: without this stretch the dial sized
+  // itself on the text and fell to 77 px inside a 226 px tile. Width follows from the aspect ratio,
+  // an oval dial not being a thing.
+  align-self: stretch;
+  justify-self: center;
+  height: 100%;
+  min-height: 0;
+  aspect-ratio: 1;
+  // The figure is measured against the dial, not the tile: it has to fit inside the disc, not the
+  // grid cell.
+  container-type: size;
+}
+
+.tile__dial {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  // Ticks do not thicken with the dial: a 300 px dial would otherwise carry graduations four times
+  // heavier than the same dial at 80, whereas a dial reads at constant stroke.
+  vector-effect: non-scaling-stroke;
+}
+
+.tile__dial-track {
+  stroke: color-mix(in srgb, var(--text-muted) 34%, transparent);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.tile__dial-redline {
+  stroke: color-mix(in srgb, var(--danger) 62%, transparent);
+  stroke-width: 3;
+  stroke-linecap: butt;
+}
+
+.tile__dial-tick {
+  stroke: color-mix(in srgb, var(--text-muted) 55%, transparent);
+  stroke-width: 0.6;
+
+  &--major {
+    stroke: var(--text-primary);
+    stroke-width: 1.4;
+    stroke-linecap: round;
+  }
+}
+
+// The travelled arc, warming as it climbs towards the red zone. The mix follows the same rule as
+// the bar.
+.tile__dial-progress {
+  // Same drift as the bar and by the same formula: the theme accent turns towards red as the needle
+  // climbs, without ever quite reaching it. A linear mix turned the arc salmon by a third of the
+  // range.
+  stroke: color-mix(in oklab, var(--accent), var(--sem-danger) calc(var(--gauge-ratio, 0) * 78%));
+  stroke-width: 3;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 55%, transparent));
+  transition: stroke-dashoffset 90ms linear;
+}
+
+.tile__dial-needle {
+  fill: color-mix(in oklab, var(--text-primary), var(--sem-danger) calc(var(--gauge-ratio, 0) * 78%));
+  stroke: none;
+  // As brief as the adapter's step: any longer and the needle lags behind the figure, and the two
+  // contradict each other.
+  transition: transform 90ms linear;
+}
+
+
+// The figure, set at the centre. Much smaller than in an ordinary tile, where it takes half the
+// height: here it must fit inside the ring of graduations without touching them.
+.tile__readout--dial .tile__value {
+  position: relative;
+  z-index: 1;
+  // The unit goes under the figure rather than after it: side by side the pair overflowed the disc
+  // to the right from four digits on, and the dial cannot widen to take it.
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  // In dial units, not tile units: four digits must fit between the graduations, which have no
+  // reason to spread for them.
+  font-size: 26cqh;
+  max-width: 62%;
+}
+
+.tile__readout--dial .tile__unit {
+  font-size: 0.4em;
+  margin-top: 0.2em;
+}
+
+// In daylight, the halo becomes a shadow.
+//
+// A halo is escaping light: it only shows against a background darker than itself. On a light one
+// it washes the figure out instead of lifting it. The same role is carried by a drop shadow
+// instead.
+//
+// Descended from the theme rather than the attribute: it really is the decor that is light.
+:root[data-appearance='light'] {
+  .tile__value,
+  .tile__value span,
+  .tile__secondary {
+    text-shadow: 0 1px 2px rgba(24, 26, 32, calc(var(--tile-glow) * 3.2));
+  }
+
+  .tile__bar-fill {
+    box-shadow: 0 1px 3px rgba(24, 26, 32, calc(var(--tile-glow) * var(--gauge-ratio) * 3.2));
+  }
+
+  .tile__dial-progress {
+    filter: drop-shadow(0 1px 2px rgba(24, 26, 32, 0.28));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tile__dial-needle,
+  .tile__dial-progress {
+    transition-duration: 1ms;
+  }
+}
+
+// Dressing, set per tile.
+//
+// The theme keeps everything else - colours, radius, weights - and only the surface gives way.
+// `border-color: transparent` rather than zero width: the box keeps exactly the same geometry, so a
+// tile does not shift by a pixel when it loses its border.
+.tile[data-chrome='borderless'],
+.tile[data-chrome='bare'],
+.tile[data-chrome='feathered'] {
+  border-color: transparent;
+}
+
+// The backdrop blur and the rim belong to the fill, not the border: keeping them without it would
+// leave a frosted plate floating without a surface.
+.tile[data-chrome='unfilled'],
+.tile[data-chrome='bare'] {
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+// Edge feathering.
+//
+// The fill no longer stops dead: it fades out towards all four sides. Two crossed gradients as a
+// mask rather than one radial, which would hollow the corners well before the side midpoints and
+// give an oval blot.
+//
+// The mask applies to a separate layer, not the tile: applied to the tile it would erase the text
+// along with the fill.
+.tile[data-chrome='feathered'] {
+  background: none;
+  box-shadow: none;
+  // The layer sits behind the content via a negative `z-index`, which only means anything inside a
+  // stacking context; without one it would fall behind the board itself and disappear.
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--tile-bg);
+    backdrop-filter: blur(var(--tile-blur));
+    -webkit-backdrop-filter: blur(var(--tile-blur));
+    --feather: 22%;
+    mask-image:
+      linear-gradient(
+        to right,
+        transparent 0,
+        #000 var(--feather),
+        #000 calc(100% - var(--feather)),
+        transparent 100%
+      ),
+      linear-gradient(
+        to bottom,
+        transparent 0,
+        #000 var(--feather),
+        #000 calc(100% - var(--feather)),
+        transparent 100%
+      );
+    mask-composite: intersect;
+    -webkit-mask-composite: source-in;
+  }
+}
+
+// Feathering does not apply to a side that meets the screen edge.
+//
+// Fading the fill against the edge would hollow it out, where flush contact asks for continuity.
+// The gradient on that side starts fully opaque.
+.tile[data-chrome='feathered'][data-flush~='left']::before {
+  mask-image:
+    linear-gradient(to right, #000 0, #000 calc(100% - var(--feather)), transparent 100%),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--feather),
+      #000 calc(100% - var(--feather)),
+      transparent 100%
+    );
+}
+
+.tile[data-chrome='feathered'][data-flush~='right']::before {
+  mask-image:
+    linear-gradient(to right, transparent 0, #000 var(--feather), #000 100%),
+    linear-gradient(
+      to bottom,
+      transparent 0,
+      #000 var(--feather),
+      #000 calc(100% - var(--feather)),
+      transparent 100%
+    );
+}
+
+// The two quiet states of a caption.
+//
+// Both keep the element in the grid: every other part of the tile reads its position from the row
+// it sits in, and the dial reads its very height from the `1fr` row. Dropping the element shifted
+// the dial into the `auto` row above and it disappeared - a tile with nothing but its border.
+//
+// Hidden keeps the row at full height, so values in neighbouring tiles stay on one line. Spread
+// takes the height to zero and lets the row below have it.
+.tile__label.is-hide {
+  visibility: hidden;
+}
+
+.tile__label.is-spread {
+  visibility: hidden;
+  height: 0;
+  // The base rule floors this at `max-content` to stop the text being sliced; here there is no
+  // text to protect and the floor is exactly what must give way.
+  min-height: 0;
+  overflow: hidden;
+}
+
+// Spread, the room the caption gave up shows as air between what is left.
+//
+// A dial simply becomes a bigger dial - it is `inset: 0` in a row that just grew. A figure keeps
+// its size, being scaled against the tile rather than the row, so without this it would sit in a
+// taller empty row and nothing would look reclaimed.
+//
+// A larger font was tried here and taken back out: keyed to the tile height it gained nothing on
+// tall tiles and risked overflowing short ones.
+.tile[data-caption='spread'] {
+  gap: calc(var(--sp-1) * 2.2);
+}
+
+// A dial takes the room the square around it was never using.
+//
+// Three sources, all measured on a 211x193 tile whose dial came out at 128:
+//
+//   - the trailing `auto` row, empty on a dial tile, and the gap above it;
+//   - the tile padding, which on a disc inscribed in a square is already empty at the corners;
+//   - nothing else - the dial does fill the height of its own row, so widening that row is the
+//     only lever.
+//
+// The padding is cut rather than removed: the arc needs a hair of clearance from the border, and
+// the caption above it still has to breathe.
+.tile:has(.tile__readout--dial) {
+  padding: calc(var(--tile-padding) * 0.4);
+}
+
+.tile__readout--dial {
+  // Down to the last track: the empty row below a dial and the gap that precedes it are height the
+  // circle can have instead.
+  grid-row: 2 / -1;
+}

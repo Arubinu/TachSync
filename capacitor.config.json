@@ -1,0 +1,8 @@
+{
+  "appId": "fr.arubinu.tachsync",
+  "appName": "TachSync",
+  "webDir": "dist",
+  "android": {
+    "webContentsDebuggingEnabled": true
+  }
+}

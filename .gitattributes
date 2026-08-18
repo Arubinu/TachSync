@@ -1,0 +1,41 @@
+# Line endings, decided by the repository rather than by each machine.
+#
+# Without this, `core.autocrlf` answers the question, and it is set per installation: the same
+# clone comes out with different bytes depending on who made it. Git said as much on `git add`,
+# warning that it would rewrite `gradlew` with CRLF the next time it touched the file.
+#
+# Everything is normalised to LF in the repository. What differs is what lands in the working
+# copy, and only where the format demands it.
+
+* text=auto
+
+# Must stay LF, wherever they are checked out.
+#
+# A shell script read with CRLF fails on its own first line: the interpreter looks for `/bin/sh\r`
+# and does not find it. `gradlew` has no extension, so it is named outright.
+*.sh            text eol=lf
+gradlew         text eol=lf
+
+# Must be CRLF, for the opposite reason: the Windows command interpreter mis-parses LF-only batch
+# files, silently and only sometimes.
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
+
+# Binary: never normalised, never diffed as text.
+*.png           binary
+*.jpg           binary
+*.jpeg          binary
+*.webp          binary
+*.avif          binary
+*.ico           binary
+*.woff          binary
+*.woff2         binary
+*.wasm          binary
+*.glb           binary
+*.gltf          binary
+*.riv           binary
+*.jar           binary
+*.keystore      binary
+*.apk           binary
+*.aab           binary
+*.af            binary

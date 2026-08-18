@@ -1,0 +1,102 @@
+// The avatar stage, and the ambient effects layered over the board.
+
+// Fills its tile with no background of its own: the screen decor stays visible
+// behind the character, with no rectangular cut-out.
+.avatar-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1;
+  // The character never catches the finger; the tile handles the gesture.
+  pointer-events: none;
+
+  &__mount {
+    position: absolute;
+    inset: 0;
+
+    // A character composed for the left of the screen looks the wrong way once
+    // moved to the right.
+    &.is-mirrored {
+      transform: scaleX(-1);
+    }
+
+    > svg,
+    > canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  // Missing avatar file: say where to drop it rather than stay blank.
+  &__error {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    padding: 1rem;
+    text-align: center;
+    font-size: clamp(0.6rem, 8cqh, 0.85rem);
+    line-height: 1.5;
+    color: var(--text-muted);
+  }
+}
+
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.035) 0px,
+    rgba(255, 255, 255, 0.035) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+}
+
+// Status halo: the screen edge glows when the link is lost. Nothing permanent
+// occupies the grid to report a state that is nominal most of the time.
+.halo {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  box-shadow: inset 0 0 clamp(40px, 9vmin, 110px) clamp(4px, 1.2vmin, 14px) var(--danger);
+  animation: halo-breathe 2.4s ease-in-out infinite;
+  display: grid;
+  align-content: end;
+  justify-items: center;
+  padding-bottom: max(0.6rem, env(safe-area-inset-bottom));
+
+  &--connecting {
+    box-shadow: inset 0 0 clamp(40px, 9vmin, 110px) clamp(4px, 1.2vmin, 14px) var(--accent);
+  }
+
+  &__text {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--text-muted);
+  }
+}
+
+@keyframes halo-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .halo {
+    animation: none;
+  }
+}

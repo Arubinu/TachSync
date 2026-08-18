@@ -1,0 +1,159 @@
+// Tokens, reset and the page shell.
+//
+// No aesthetic value is hard-coded anywhere in these files: colours, spacing
+// and shapes all come from the variables the active theme writes onto the root
+// element (see src/theme/themes.ts). Adding a theme touches no stylesheet.
+
+// Interface palette, independent of themes.
+//
+// Panels, pickers and edit bars keep the same look whatever theme is chosen.
+// The theme dresses the tiles and the background, never the controls — a light
+// theme would otherwise make a panel unreadable and leave the driver lost.
+:root {
+  --ui-bg: rgb(9, 12, 24);
+  --ui-surface: rgb(30, 39, 66);
+  --ui-border: rgba(148, 163, 184, 0.22);
+  --ui-text: #eef2ff;
+  --ui-text-muted: rgba(226, 232, 255, 0.58);
+  --ui-accent: #22d3ee;
+  --ui-accent-alt: #ff2d95;
+  --ui-danger: #ff4d6d;
+  // The veil that isolates a window from the rest of the screen.
+  --ui-veil: rgba(2, 4, 10, 0.66);
+  // Ink laid on a flat accent - an active chip, a tick.
+  --ui-on-accent: #05070d;
+
+  color-scheme: dark;
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+
+// The same interface, in daylight.
+//
+// Written here rather than derived from the theme: windows do not belong to the decor. An amber
+// theme must not tint a picker orange, otherwise every theme would require rechecking the
+// legibility of every window.
+//
+// The accent does darken: the night one is designed to glow on black and disappears on white.
+:root[data-appearance='light'] {
+  // Ivory rather than white, and warm grey rather than blue grey: a brilliant light tires after ten
+  // minutes and dazzles at night.
+  --ui-bg: rgb(243, 243, 240);
+  --ui-surface: rgb(232, 232, 228);
+  --ui-border: rgba(38, 40, 46, 0.14);
+  // Ink rather than black: maximum contrast is not the most legible.
+  --ui-text: #22262e;
+  // Measured at 3.2:1 on the background and 3.1:1 on a surface, against the 4.5 required for
+  // body text: the light palette reused the dark one's alpha, where the same 0.58 lands at
+  // 5.8:1 because the ink sits on near-black. At 0.80 it reads 5.8 and 5.4, still visibly
+  // quieter than the 12:1 of primary text.
+  --ui-text-muted: rgba(52, 58, 68, 0.8);
+  --ui-accent: #17697f;
+  --ui-accent-alt: #a3245a;
+  --ui-danger: #c62a48;
+  // Barely there rather than black: on a light background a dark veil punches a hole in the screen.
+  // It only needs to step back one tone.
+  --ui-veil: rgba(70, 74, 84, 0.34);
+  --ui-on-accent: #f7f8fa;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  // The theme background covers the whole screen and stays visible behind
+  // translucent tiles and behind the avatar: it is what makes the screen read
+  // as one surface rather than two panes.
+  background: var(--bg, #05070d);
+  background-attachment: fixed;
+  color: var(--text-primary, #f1f5f9);
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  // An in-car monitor must not highlight on a resting finger.
+  -webkit-tap-highlight-color: transparent;
+}
+
+// Chrome containers reassign locally the variables their descendants rely on.
+// One rule therefore lifts the whole chrome out of the theme without touching
+// the hundreds of declarations that use them.
+//
+// Tiles carry their variables inline, which outranks this inheritance: a
+// preview keeps the theme it illustrates.
+.sheet,
+.edit-bar,
+.halo,
+.cell-slot {
+  --accent: var(--ui-accent);
+  --accent-alt: var(--ui-accent-alt);
+  --text-primary: var(--ui-text);
+  --text-muted: var(--ui-text-muted);
+  --tile-border: var(--ui-border);
+  --danger: var(--ui-danger);
+  --tile-radius: 12px;
+  --tile-glow: 0;
+}
+
+// Imported background. Sits under the grid and transparent to pointers, so a
+// translucent one composes with the theme rather than replacing it.
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+// Imported image, laid over the theme background rather than replacing it in the variables.
+//
+// `cover`, not `contain`: a decor with letterbox bars down the sides is not a decor, and the centre
+// that survives the crop is where a photograph's subject almost always sits.
+.wallpaper {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+// File input hidden behind its label, which acts as the button.
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.icon {
+  width: 1.15em;
+  height: 1.15em;
+  fill: currentColor;
+  stroke: currentColor;
+  flex: none;
+}
+
+// A sentence that will not be entered by the line breaker.
+//
+// An inline-block either fits where it stands or moves down whole, so a sentence never starts at
+// the tail of the line above. It still wraps inside itself when it is wider than its paragraph,
+// which is what keeps a long sentence readable rather than overflowing.
+.sentence {
+  display: inline-block;
+}

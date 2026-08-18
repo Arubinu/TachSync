@@ -1,0 +1,37 @@
+{
+  "name": "Dials",
+  "themeId": "neon-miami",
+  "tiles": [
+    {
+      "label": "Rev dial",
+      "metrics": ["rpm"],
+      "colSpan": 1,
+      "rowSpan": 2,
+      "layout": [
+        {
+          "tag": "div",
+          "class": "gauge",
+          "children": [
+            { "tag": "div", "class": "gauge-arc" },
+            { "tag": "div", "class": "gauge-needle" },
+            { "value": "rpm", "class": "gauge-value" }
+          ]
+        },
+        { "unit": "rpm", "class": "gauge-unit" }
+      ],
+      "css": ".tile { justify-content: center; align-items: center; } .gauge { position: relative; width: 86%; aspect-ratio: 1; display: grid; place-items: center; } .gauge-arc { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 220deg, var(--accent) calc(var(--rpm-ratio) * 280deg), rgba(255,255,255,0.08) 0); mask: radial-gradient(circle, transparent 62%, #000 63%); } .gauge-needle { position: absolute; width: 2px; height: 38%; bottom: 50%; transform-origin: bottom center; transform: rotate(calc(-140deg + var(--rpm-ratio) * 280deg)); background: var(--accent-alt); box-shadow: 0 0 8px var(--accent-alt); transition: transform 90ms linear; } .gauge-value { font-size: clamp(0.9rem, 22cqh, 2rem); font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; } .gauge-unit { font-size: 0.6rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); }"
+    },
+    {
+      "label": "Temperature threshold",
+      "metrics": ["coolant"],
+      "colSpan": 1,
+      "rowSpan": 1,
+      "layout": [
+        { "label": "coolant", "class": "hot-label" },
+        { "value": "coolant", "class": "hot-value" },
+        { "tag": "div", "class": "hot-bar", "children": [{ "tag": "div", "class": "hot-fill" }] }
+      ],
+      "css": ".hot-label { font-size: 0.6rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); } .hot-value { font-size: clamp(1rem, 34cqh, 2.4rem); font-weight: 700; font-variant-numeric: tabular-nums; color: color-mix(in srgb, #ff4d4d calc(var(--coolant-ratio) * 130%), var(--accent)); } .hot-bar { height: 5px; background: rgba(255,255,255,0.12); border-radius: 3px; overflow: hidden; } .hot-fill { height: 100%; width: calc(var(--coolant-ratio) * 100%); background: color-mix(in srgb, #ff4d4d calc(var(--coolant-ratio) * 130%), var(--accent)); transition: width 120ms linear; }"
+    }
+  ]
+}

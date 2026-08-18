@@ -1,0 +1,27 @@
+node_modules/
+dist/
+dist-ssr/
+dev-dist/
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+*.log
+
+# Copied out of node_modules by scripts/sync-rive-wasm.mjs, which runs before dev,
+# build and test. Generated, and 2 MB per version if it were tracked.
+public/rive/
+
+# Android project: only what is needed is tracked. The rest is produced by the
+# build or describes this machine.
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+android/capacitor-cordova-android-plugins/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+*.apk
+*.aab
+*.keystore

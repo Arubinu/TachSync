@@ -1,0 +1,357 @@
+// The calibration screen: teaching the dashboard one particular car.
+//
+// Borrows the connect screen's ground on purpose. Both belong to the same moment - something is
+// being set up before the driving starts - and a second visual language would have made this feel
+// like a settings page rather than a step.
+
+.calib {
+  --calib-light: #7d56ac;
+  --calib-dark: #331b5c;
+
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  color: var(--ui-text);
+  isolation: isolate;
+
+  background:
+    radial-gradient(115% 66% at 50% 0%, var(--calib-light) 0%, var(--calib-dark) 100%),
+    var(--calib-dark);
+
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 0.6rem;
+  justify-items: center;
+  padding: max(1rem, env(safe-area-inset-top)) max(1.2rem, env(safe-area-inset-right))
+    max(1.4rem, env(safe-area-inset-bottom)) max(1.2rem, env(safe-area-inset-left));
+  overflow-y: auto;
+
+  &__close {
+    position: absolute;
+    top: max(0.8rem, env(safe-area-inset-top));
+    right: max(0.8rem, env(safe-area-inset-right));
+    z-index: 1;
+    min-width: var(--control-h);
+    min-height: var(--control-h);
+    border: 1px solid color-mix(in srgb, var(--ui-text) 28%, transparent);
+    border-radius: var(--r-full);
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--ui-text);
+    font-size: 0.95rem;
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--ui-accent);
+      color: var(--ui-accent);
+    }
+  }
+
+  &__head {
+    display: grid;
+    justify-items: center;
+    gap: 0.15rem;
+    padding-top: 0.6rem;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  &__subtitle {
+    margin: 0;
+    font-size: 0.82rem;
+    opacity: 0.7;
+  }
+
+  // The middle column, centred in what the header leaves. Everything a driver reads sits here, one
+  // thing under another, so the eye never has to search sideways.
+  &__body {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 0.9rem;
+    width: min(30rem, 100%);
+    text-align: center;
+  }
+
+  &__lead {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  &__note {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    opacity: 0.72;
+    max-width: 26rem;
+  }
+
+  &__warn {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    max-width: 26rem;
+    padding: 0.7rem 0.9rem;
+    border-radius: var(--r-md);
+    background: rgba(0, 0, 0, 0.28);
+    border: 1px solid color-mix(in srgb, var(--sem-warn) 55%, transparent);
+  }
+
+  /* ---------- declaring the modes ---------- */
+
+  &__modes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+  }
+
+  // A chip that latches. Larger than a checkbox needs to be, because it is chosen once, in a car,
+  // possibly with gloves on.
+  &__mode {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--control-h);
+    padding: 0 1.1rem;
+    border: 1px solid color-mix(in srgb, var(--ui-text) 26%, transparent);
+    border-radius: var(--r-full);
+    background: rgba(0, 0, 0, 0.22);
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition:
+      border-color 140ms ease,
+      background 140ms ease;
+
+    input {
+      // Kept in the accessibility tree and focusable; the chip around it is the visible control.
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    &:has(input:checked) {
+      border-color: var(--ui-accent);
+      background: color-mix(in srgb, var(--ui-accent) 22%, transparent);
+    }
+
+    &:has(input:focus-visible) {
+      outline: 2px solid var(--ui-accent);
+      outline-offset: 2px;
+    }
+  }
+
+  /* ---------- the protocol ---------- */
+
+  // Beads, one per phase. The whole protocol at a glance: how many, where we are, what is behind.
+  &__track {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__bead {
+    display: grid;
+    place-items: center;
+    inline-size: 1.15rem;
+    block-size: 1.15rem;
+    border-radius: var(--r-full);
+    border: 1px solid color-mix(in srgb, var(--ui-text) 32%, transparent);
+    color: var(--calib-dark);
+
+    svg {
+      inline-size: 0.7rem;
+      block-size: 0.7rem;
+    }
+
+    &--done {
+      background: var(--ui-accent);
+      border-color: var(--ui-accent);
+    }
+
+    // The one in progress: wider rather than merely brighter, so it reads without colour.
+    &--live {
+      inline-size: 2.1rem;
+      border-color: var(--ui-accent);
+      background: color-mix(in srgb, var(--ui-accent) 30%, transparent);
+    }
+  }
+
+  &__ring {
+    inline-size: min(9rem, 42vh);
+    block-size: min(9rem, 42vh);
+    transform: rotate(-90deg);
+  }
+
+  &__ring-track {
+    fill: none;
+    stroke: rgba(0, 0, 0, 0.3);
+  }
+
+  &__ring-fill {
+    fill: none;
+    stroke: color-mix(in srgb, var(--ui-text) 55%, transparent);
+    stroke-linecap: round;
+    transition:
+      stroke-dashoffset 400ms ease,
+      stroke 200ms ease;
+  }
+
+  // Full turns the ring to the accent: the step now counts, and that is readable at a glance
+  // without reading a word.
+  &__ring--full &__ring-fill {
+    stroke: var(--ui-accent);
+  }
+
+  &__ring-text {
+    transform: rotate(90deg);
+    transform-origin: center;
+    fill: var(--ui-text);
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-anchor: middle;
+    dominant-baseline: central;
+    opacity: 0.85;
+  }
+
+  &__step {
+    margin: 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  // The one thing to read while driving. Deliberately the largest type on the screen.
+  &__instruction {
+    margin: 0;
+    font-size: clamp(1.35rem, 5vw, 1.9rem);
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  /* ---------- what was learned ---------- */
+
+  &__sheet {
+    display: grid;
+    gap: 0.1rem;
+    width: 100%;
+    margin: 0;
+  }
+
+  &__finding {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0.2rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--ui-text) 12%, transparent);
+
+    dt {
+      font-size: 0.9rem;
+      opacity: 0.75;
+    }
+
+    dd {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &__unit {
+    margin-left: 0.3em;
+    font-size: 0.75em;
+    font-weight: 400;
+    opacity: 0.6;
+  }
+
+  &__tag {
+    margin-left: 0.5em;
+    padding: 0.1em 0.5em;
+    border-radius: var(--r-full);
+    background: rgba(0, 0, 0, 0.3);
+    font-size: 0.62em;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+
+  &__unknown {
+    font-weight: 400;
+    font-size: 0.85rem;
+    opacity: 0.45;
+  }
+
+  /* ---------- actions ---------- */
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    width: 100%;
+    margin-top: 0.4rem;
+  }
+
+  &__primary,
+  &__ghost {
+    flex: 1 1 9rem;
+    max-width: 15rem;
+    min-height: calc(var(--control-h) + 0.5rem);
+    padding: 0 1.4rem;
+    border-radius: var(--r-full);
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease;
+  }
+
+  &__primary {
+    border: none;
+    background: var(--ui-accent);
+    color: #14082b;
+
+    &:hover {
+      background: color-mix(in srgb, var(--ui-accent) 85%, white);
+    }
+  }
+
+  // Available but not urged: skipping a step and exporting a file are both legitimate, neither is
+  // what the screen is asking for.
+  &__ghost {
+    border: 1px solid color-mix(in srgb, var(--ui-text) 30%, transparent);
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--ui-text);
+
+    &:hover {
+      border-color: var(--ui-accent);
+      color: var(--ui-accent);
+    }
+  }
+}
+
+// The law, under the instruction. Quieter than the step, never absent from a phase that happens on
+// a road: a notice that shouts gets skipped, and this one has to survive being read many times.
+.calib__law {
+  margin: 0;
+  max-width: 26rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  opacity: 0.55;
+}

@@ -1,0 +1,429 @@
+// The connect screen: choosing where the data comes from.
+
+.connect {
+  // Tints sampled from the logo background rather than picked by eye, so page
+  // and artwork continue into each other.
+  --connect-light: #7d56ac;
+  --connect-dark: #331b5c;
+
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  color: var(--ui-text);
+  // Anchor for the language selector, positioned absolutely in the corner.
+  isolation: isolate;
+
+  // Halo rooted at the top centre, spent two thirds down. Beyond that the end
+  // colour holds alone: the gradient stops, the page does not.
+  background:
+    radial-gradient(115% 66% at 50% 0%, var(--connect-light) 0%, var(--connect-dark) 100%),
+    var(--connect-dark);
+
+  display: grid;
+  padding: max(1rem, env(safe-area-inset-top)) max(1.2rem, env(safe-area-inset-right))
+    max(1.2rem, env(safe-area-inset-bottom)) max(1.2rem, env(safe-area-inset-left));
+  overflow-y: auto;
+
+  // Portrait: logo on top, buttons pinned to the bottom, the text centred in
+  // what is left between them.
+  //
+  // The middle row takes all the free space and the legend centres inside it,
+  // so the wording sits in the open rather than hanging just above the buttons.
+  // The controls stay put however many adapters appear: on a phone held
+  // one-handed, what gets touched stays under the thumb.
+  grid-template-rows: auto 1fr auto;
+  gap: 0.9rem;
+  justify-items: center;
+
+  // The two-letter code reads in any language, which a translated label would
+  // not: on first launch the interface may be in a language one cannot read.
+  &__language {
+    position: absolute;
+    top: max(0.8rem, env(safe-area-inset-top));
+    right: max(0.8rem, env(safe-area-inset-right));
+    z-index: 1;
+    font: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    min-width: var(--control-h);
+    // Measured at 38 px. Nothing here is worth being harder to hit than the rest.
+    min-height: var(--control-h);
+    padding: 0 0.7rem;
+    border: 1px solid color-mix(in srgb, var(--ui-text) 28%, transparent);
+    border-radius: var(--r-full);
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--ui-text);
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--ui-accent);
+      color: var(--ui-accent);
+    }
+  }
+
+  &__brand {
+    grid-row: 1;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    // A hair higher, to give back to the banner below the room it just took.
+    margin-top: -0.6rem;
+  }
+
+  // Two thirds of the width at least, without eating the usable height.
+  &__logo {
+    width: 68%;
+    max-width: min(26rem, 42vh);
+    height: auto;
+  }
+
+  &__legend {
+    grid-row: 2;
+    align-self: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  &__choices {
+    grid-row: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 500;
+    color: color-mix(in srgb, var(--ui-text) 72%, transparent);
+  }
+
+  &__hint {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--ui-text) 62%, transparent);
+    max-width: 30rem;
+    text-align: center;
+  }
+
+  &__error {
+    font-size: 0.85rem;
+    color: var(--ui-danger);
+    max-width: 30rem;
+    text-align: center;
+  }
+
+  &__list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: min(28rem, 100%);
+  }
+
+  &__device {
+    font: inherit;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 3.4rem;
+    padding: 0 1rem;
+    border: 1px solid color-mix(in srgb, var(--ui-text) 22%, transparent);
+    border-radius: var(--r-md);
+    background: rgba(0, 0, 0, 0.22);
+    color: var(--ui-text);
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      border-color: var(--ui-accent);
+    }
+
+    // Fill for the press-and-hold that arms a recorded session.
+    //
+    // Painted on the button itself, a hard-stop gradient driven by `--hold`: over five seconds an
+    // indicator placed elsewhere would not be looked at, and an unanswered press would read as a
+    // failure well before the end.
+    &.is-holding {
+      border-color: var(--ui-accent);
+      background-image: linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--ui-accent) 32%, transparent) 0 calc(var(--hold, 0) * 100%),
+        transparent calc(var(--hold, 0) * 100%)
+      );
+    }
+
+    &-name {
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    &-signal {
+      flex: none;
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+      color: color-mix(in srgb, var(--ui-text) 60%, transparent);
+    }
+  }
+
+  &__action {
+    font: inherit;
+    min-height: var(--control-h);
+    padding: 0 1.4rem;
+    border: 1px solid var(--ui-accent);
+    border-radius: var(--r-full);
+    background: color-mix(in srgb, var(--ui-accent) 18%, transparent);
+    color: var(--ui-text);
+    cursor: pointer;
+  }
+
+  &__spinner {
+    width: 0.85rem;
+    height: 0.85rem;
+    border: 2px solid color-mix(in srgb, var(--ui-accent) 30%, transparent);
+    border-top-color: var(--ui-accent);
+    border-radius: 50%;
+    animation: connect-spin 0.8s linear infinite;
+  }
+
+  // Deliberately quiet: this is a way out, not the normal route. Visible enough
+  // to be found, plain enough not to be taken by default when getting in a car.
+  &__simulate {
+    font: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    min-height: var(--control-h);
+    padding: 0.5rem 1.4rem;
+    border: 1px solid color-mix(in srgb, var(--ui-text) 22%, transparent);
+    border-radius: var(--r-full);
+    background: none;
+    color: color-mix(in srgb, var(--ui-text) 62%, transparent);
+    cursor: pointer;
+
+    &:hover {
+      color: var(--ui-text);
+      border-color: var(--ui-accent);
+    }
+
+    &-note {
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
+  }
+}
+
+@keyframes connect-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connect__spinner {
+    animation-duration: 3s;
+  }
+}
+
+// Two columns, and only when height forces it.
+//
+// The stacked layout reads better everywhere it fits, so a wide screen alone is
+// no reason to split: a tablet lying flat has room to spare. What breaks the
+// stack is a short viewport — a phone turned sideways — where the adapter list
+// would squeeze against the simulator button, or push it off the screen.
+//
+// The threshold measures what the stack actually needs: logo capped at 42vh,
+// legend, two adapters at 3.4rem each, the button, plus padding and gaps. Below
+// roughly 640px that no longer holds, and the width is then better spent than
+// the height. The orientation clause keeps a short *portrait* window — a resized
+// desktop one — out of a two-column layout it is far too narrow for.
+@media (orientation: landscape) and (max-height: 640px) {
+  .connect {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    column-gap: 1.5rem;
+    row-gap: 0.6rem;
+
+    &__brand {
+      grid-column: 1;
+      grid-row: 1;
+      align-self: start;
+    }
+
+    &__logo {
+      width: 78%;
+      max-width: min(24rem, 46vh);
+    }
+
+    &__legend {
+      grid-column: 1;
+      grid-row: 2;
+      align-self: center;
+    }
+
+    &__choices {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      align-self: center;
+      justify-content: center;
+    }
+
+    // Height is scarce: the list scrolls rather than push the simulator button
+    // off the screen.
+    &__list {
+      max-height: 50vh;
+      overflow-y: auto;
+    }
+  }
+}
+
+// The identity banner: who is getting in, and into what. It shows rather than asks, avoiding a
+// screen before this one for a question whose answer does not change.
+//
+// It lives inside the brand block so it takes real room and cannot overlap the logo. Not in the
+// screen grid: that grid declares its rows one by one, so an extra child files after all of them.
+.connect__identity {
+  margin-top: var(--sp-3);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 55%;
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0 0.7rem;
+  // Measured at 40 px, four short of the minimum. It is one of the two things touched before
+  // driving off, so it gets the full target like everything else.
+  min-height: var(--control-h);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--r-full);
+  background: rgba(0, 0, 0, 0.22);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+}
+
+// Each name truncates for itself: without this a long vehicle name crushed the person instead of
+// sharing the space.
+.connect__identity-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.connect__identity-sep {
+  flex: none;
+  opacity: 0.5;
+}
+
+
+// The terms, ahead of everything. Same ground as the connect screen it precedes: this is the first
+// page of the same thing, not an interstitial pasted in front of it.
+//
+// Only the middle row differs. Where the connect screen centres a short caption in the space it has,
+// this one has a list to hold, so the row scrolls on its own rather than pushing the button off a
+// small screen - the thing to accept must always be reachable without the page moving under it.
+.terms {
+  grid-template-rows: auto 1fr auto;
+
+  &__body {
+    grid-row: 2;
+    align-self: center;
+    width: min(34rem, 100%);
+    max-height: 100%;
+    overflow-y: auto;
+    padding: 0.2rem;
+  }
+
+  &__title {
+    margin: 0 0 0.2rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  // The sentence that says what the whole page is about, before the detail.
+  &__lead {
+    margin: 0 0 1rem;
+    font-size: 1.2rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: center;
+  }
+
+  &__list {
+    display: grid;
+    gap: 0.75rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      position: relative;
+      padding-left: 1.1rem;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      opacity: 0.85;
+
+      // A marker drawn rather than a bullet character, so it keeps the accent and its own baseline.
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0.62em;
+        inline-size: 0.35rem;
+        block-size: 0.35rem;
+        border-radius: var(--r-full);
+        background: var(--ui-accent);
+      }
+    }
+  }
+
+  &__actions {
+    grid-row: 3;
+    display: grid;
+    justify-items: center;
+    width: 100%;
+  }
+
+  &__accept {
+    min-height: calc(var(--control-h) + 0.5rem);
+    width: min(22rem, 100%);
+    padding: 0 1.6rem;
+    border: none;
+    border-radius: var(--r-full);
+    background: var(--ui-accent);
+    color: #14082b;
+    font: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      background: color-mix(in srgb, var(--ui-accent) 85%, white);
+    }
+  }
+}

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- viewport-fit=cover: the screen must reach the edges, notch included. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <!--
+      The application handles both of its appearances itself.
+
+      Without this declaration, an engine in dark mode assumes a light page does not know how, and
+      darkens it by force: flat fills - the panels, the tabs - get inverted while the board
+      gradients escape it. The result is a light grid inside a dark interface, which is nobody's
+      choice.
+    -->
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#3E2468" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>TachSync</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

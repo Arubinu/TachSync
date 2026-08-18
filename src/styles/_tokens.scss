@@ -1,0 +1,121 @@
+// Design tokens: the scales every surface reads from.
+//
+// Until these existed, each screen carried its own hand-tuned values. Every one
+// of them was defensible on its own, which is exactly why the whole read as a
+// set of well-made parts rather than as one product: nothing tied them.
+//
+// A scale is not a constraint, it is a memory aid. Two screens end up related
+// because they drew from the same twelve numbers, not because someone
+// remembered what the other one used.
+
+// Saira, variable in weight and width.
+//
+// A system stack was enough to display text, never to give it character - the first thing read on
+// an interface without consciously judging it. This one is an industrial grotesque, drawn in the
+// lineage of signage lettering: the same visual family as the dashboard being imitated.
+//
+// One file for two uses, which the width axis makes possible: condensed digits for large values,
+// normal width for labels. Two fonts would have cost two downloads.
+//
+// `swap`: text shows immediately in the fallback face and switches on arrival. A dashboard blank
+// while a font loads would be worse than a badly set one.
+@font-face {
+  font-family: 'Saira';
+  src: url('/fonts/saira-latin.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-stretch: 50% 125%;
+  font-display: swap;
+}
+
+:root {
+  --font-sans: 'Saira', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  // --- Spacing -------------------------------------------------------------
+  // Fourfold, because 4 is the smallest step the eye still reads as deliberate.
+  // Anything below --sp-1 is not spacing but an optical correction, and belongs
+  // beside the rule that needs it.
+  --sp-1: 0.25rem;
+  --sp-2: 0.5rem;
+  --sp-3: 0.75rem;
+  --sp-4: 1rem;
+  --sp-5: 1.5rem;
+  --sp-6: 2rem;
+  --sp-7: 3rem;
+
+  // Single control height. It was 2.5 / 2.6 / 2.9 / 3 rem depending on the place: four values close
+  // enough to look accidental, different enough that the eye could no longer group the controls of
+  // one panel. Comfortable under a finger in a car, which sets the floor.
+  --control-h: 2.75rem;
+
+  // Compact step, for the option rows of an already dense window.
+  //
+  // A second step and no more: what the note above fights is the scattering, not the existence of a
+  // variant. Named, it is reused identically instead of being reinvented at 2.4 then 2.6 rem. The
+  // horizontal padding goes with it: the two make the same button.
+  --control-h-sm: 2.5rem;
+  --control-pad-sm: 0.65rem;
+
+  // --- Radius --------------------------------------------------------------
+  // Three steps and a pill. A radius that matches no other radius on screen is
+  // the fastest way to look accidental.
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-full: 999px;
+
+  // --- Type ----------------------------------------------------------------
+  // Ratio 1.2, tuned so every step lands on a whole pixel at the default size.
+  // Interface only: values inside tiles are sized against their container in
+  // `cq` units instead, since a tile has no idea how big it will be.
+  --fs-micro: 0.6875rem; // 11px — overlines, units
+  --fs-small: 0.8125rem; // 13px — helper text
+  --fs-body: 0.9375rem; //  15px — controls
+  --fs-lead: 1.125rem; //   18px — panel titles
+  --fs-title: 1.375rem; //  22px — screen titles
+
+  // Letter-spacing rides against size: small uppercase text needs air, large
+  // numerals need the opposite or they read as loose.
+  --tr-overline: 0.14em;
+  --tr-tight: -0.02em;
+  --tr-tighter: -0.035em;
+
+  // --- Weight --------------------------------------------------------------
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  // --- Elevation -----------------------------------------------------------
+  // On a dark interface a drop shadow alone does almost nothing: there is no
+  // light to occlude. What actually reads as raised is the pairing of a shadow
+  // below with a hairline of light along the top edge, the way a real lit
+  // surface catches its own rim.
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elev-2:
+    0 4px 12px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --elev-3:
+    0 16px 40px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+  --rim: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+  // --- Motion --------------------------------------------------------------
+  // One duration for anything the finger triggers, one for anything that moves
+  // on its own. Mixed durations are what make an interface feel unowned.
+  --dur-fast: 120ms;
+  --dur-slow: 260ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  // --- Semantic colour -----------------------------------------------------
+  // Independent of the theme accent: a redline has to mean redline whatever
+  // palette is loaded. Themes tint the interface, they do not get to redefine
+  // what "too hot" looks like.
+  --sem-ok: #34d399;
+  --sem-warn: #fbbf24;
+  --sem-danger: #fb3b53;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-slow: 0ms;
+  }
+}

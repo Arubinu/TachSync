@@ -1,0 +1,397 @@
+// The tile editor modal, and the grid-footprint picker it contains.
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 22;
+  display: grid;
+  place-items: center;
+  padding: max(0.6rem, env(safe-area-inset-top)) max(0.6rem, env(safe-area-inset-right))
+    max(0.6rem, env(safe-area-inset-bottom)) max(0.6rem, env(safe-area-inset-left));
+  background: var(--ui-veil);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  animation: modal-in 160ms ease-out;
+
+  &.is-closing {
+    animation: modal-out 140ms ease-in forwards;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes modal-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-backdrop,
+  .modal-backdrop.is-closing {
+    animation-duration: 1ms;
+  }
+}
+
+.modal {
+  --accent: var(--ui-accent);
+  --accent-alt: var(--ui-accent-alt);
+  --text-primary: var(--ui-text);
+  --text-muted: var(--ui-text-muted);
+  --tile-border: var(--ui-border);
+  --danger: var(--ui-danger);
+
+  width: min(40rem, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--ui-bg);
+  border: 1px solid var(--ui-border);
+  border-radius: 16px;
+  color: var(--ui-text);
+  overflow: hidden;
+
+  &__header {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    // Controls were touching once a screen offered a second one beside back. The gap applies to
+    // every slot, so nothing is spaced as a special case.
+    gap: var(--sp-2);
+    padding: 0.6rem 0.7rem;
+    border-bottom: 1px solid var(--ui-border);
+  }
+
+  &__title {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Holds its place without showing, so the title stays centred when the window has nothing to
+  // delete. `visibility` rather than `display`: the footprint is exactly what must be kept.
+  &__action--ghost {
+    visibility: hidden;
+  }
+
+  &__action {
+    font: inherit;
+    width: 2.6rem;
+    height: var(--control-h);
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--ui-text-muted) 10%, transparent);
+    color: var(--ui-text);
+    cursor: pointer;
+
+    &--danger {
+      color: var(--ui-danger);
+      border-color: color-mix(in srgb, var(--ui-danger) 45%, transparent);
+      background: color-mix(in srgb, var(--ui-danger) 12%, transparent);
+
+      &:hover {
+        background: color-mix(in srgb, var(--ui-danger) 22%, transparent);
+      }
+
+      // The bin's grooves are cut out, to stay legible at small sizes.
+      .icon__cut {
+        fill: var(--ui-bg);
+      }
+    }
+  }
+
+  // Dashed: it opens a mode, not a screen. The dotted edge sets it apart from the solid controls
+  // it stands next to without needing a colour, which the header has none to spare.
+  &__action--dashed {
+    border-style: dashed;
+  }
+
+  &__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+
+  &__columns {
+    display: grid;
+    gap: 1.4rem;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  }
+
+  &__column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    // Without this the column lets its content push it instead of constraining it: a grid item's
+    // default is its min-content size, not zero.
+    min-width: 0;
+
+    &--centered {
+      align-items: center;
+      text-align: center;
+    }
+
+    h3 {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--ui-text-muted);
+      font-weight: 500;
+      // Centred in every column, including the layout one, which is not itself centred: its heading
+      // caps the whole column and need not align with the content that follows.
+      text-align: center;
+
+      &:not(:first-child) {
+        margin-top: 0.6rem;
+      }
+    }
+  }
+
+  &__note {
+    font-size: 0.78rem;
+    color: var(--ui-text-muted);
+    line-height: 1.45;
+  }
+
+  &__choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+  }
+}
+
+// The grid is the control: no more rails, no more gutters.
+//
+// The two sliders that flanked it took a 2.4 rem track each side for a preview that only displayed.
+// Returned to the grid, those rem enlarge the cells, which is what decides whether a finger can hit
+// them.
+.layout-picker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+  // Bounded, because height follows width.
+  //
+  // The grid keeps the board's proportions: spread over the window's forty rem it took three
+  // hundred pixels of height and pushed the option rows off screen.
+  //
+  // The bound applies to the grid alone: the header takes the full window width, otherwise the
+  // heading and the footprint reading would close in as the grid shrinks and stop framing anything.
+  width: 100%;
+
+  &__grid {
+    position: relative;
+    display: grid;
+    min-width: 0;
+    width: min(100%, 28rem);
+    margin-inline: auto;
+    grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+    // The board's real proportions, not a fixed ratio, which would misreport tile shape on
+    // every screen format. The dimensions come from code: `aspect-ratio` wants two numbers and
+    // refuses two lengths.
+    aspect-ratio: var(--board-w) / var(--board-h);
+    // The outer stroke, which the edge cells lack.
+    border-top: 1px dotted var(--ui-border);
+    border-left: 1px dotted var(--ui-border);
+    // The gesture belongs to the picker: without this, dragging over it scrolls the window instead
+    // of extending the footprint.
+    touch-action: none;
+    cursor: pointer;
+  }
+
+  &__cell {
+    appearance: none;
+    padding: 0;
+    background: none;
+    border: none;
+    border-right: 1px dotted var(--ui-border);
+    border-bottom: 1px dotted var(--ui-border);
+    cursor: inherit;
+
+    &:focus-visible {
+      outline: 2px solid var(--ui-accent);
+      outline-offset: -2px;
+    }
+  }
+
+  // The footprint, reduced to two corner brackets.
+  //
+  // Two opposite corners are enough to designate a rectangle, and they leave what they frame
+  // visible. The coloured fill that preceded them tinted the tile it covered, and a full outline
+  // duplicated the grid strokes just underneath.
+  &__area {
+    position: relative;
+    display: grid;
+    overflow: hidden;
+    // Opaque, in the window's colour.
+    //
+    // The coloured fill also hid, incidentally, the cell separators it covered. Removed, it let
+    // them show through the tile's translucent background: extra dotted lines inside the footprint
+    // that grew with it.
+    //
+    // The window's colour rather than a tint: the tile must look laid on the background, not
+    // highlighted.
+    background: var(--ui-bg);
+    // Does not weigh on the grid's size.
+    //
+    // The footprint carries the preview, whose intrinsic size propagated up to the grid track: the
+    // picker's width changed with the footprint - measured 390 px at 1 x 1 against 292 at 1 x 2 -
+    // and its height followed by aspect ratio, so every cell resized on each choice.
+    min-width: 0;
+    min-height: 0;
+    // The gesture passes through the footprint: otherwise it would intercept the pointer as soon as
+    // the selection shrank, and the grid would stop following the finger.
+    pointer-events: none;
+    transition:
+      grid-column 0.12s ease,
+      grid-row 0.12s ease;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      // Above the preview, or half the brackets disappear: a `::before` pseudo-element paints
+      // before children, and the tile background covered it.
+      z-index: 1;
+      width: 1.1rem;
+      height: 1.1rem;
+      border: 2px solid var(--ui-accent);
+    }
+
+    // Equal arms rather than proportional: a bracket stretching with the footprint ends up drawing
+    // its outline, which is precisely what was ruled out.
+    &::before {
+      top: 0;
+      left: 0;
+      border-width: 2px 0 0 2px;
+      border-top-left-radius: var(--r-sm);
+    }
+
+    &::after {
+      right: 0;
+      bottom: 0;
+      border-width: 0 2px 2px 0;
+      border-bottom-right-radius: var(--r-sm);
+    }
+  }
+
+  &__head {
+    display: flex;
+    align-items: baseline;
+    // At both ends rather than together: the number belongs to the right edge of the drawing it
+    // quantifies, not to the heading that precedes it.
+    justify-content: space-between;
+    gap: var(--sp-3);
+    width: 100%;
+
+    // Taken from `.modal__column h3`, whose rule centres: here the heading opens the line.
+    h3 {
+      text-align: left;
+    }
+  }
+
+  &__readout {
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+    color: var(--ui-text-muted);
+  }
+}
+
+// A scale model, not a small tile.
+//
+// Tile text is sized in `cqh` but floored in `rem`, so a tile drawn straight into a picker cell
+// hits those floors and stops being to scale - which is what clipped the text.
+//
+// The tile is therefore drawn at its real board size and optically reduced, so the `cqh`, the
+// floors, the container-query thresholds and any later rule all follow with nothing to copy.
+.layout-picker__tile {
+  // Out of flow: an absolutely positioned element never contributes to its parent's size, which
+  // stops the propagation at the root rather than halfway.
+  position: absolute;
+  top: 0;
+  left: 0;
+  // The room it would occupy on the board, to the pixel.
+  width: calc(var(--board-w) * 1px / var(--cols) * var(--span-cols));
+  height: calc(var(--board-h) * 1px / var(--rows) * var(--span-rows));
+  // `--miniature` is the grid width divided by the screen width: the product lands exactly on the
+  // footprint, which is the same fraction. No CSS unit can divide two lengths, hence the
+  // measurement in code.
+  transform: scale(var(--miniature, 1));
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+// Window-specific controls, grouped in the left corner. They take the place the bin or the back
+// arrow occupy elsewhere, so the title shifts slightly when there are two of them.
+.modal__leading {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+// A file label disguised as a button inherits neither the cursor nor the centring: give them back.
+label.modal__action {
+  cursor: pointer;
+}
+
+// The language code, the only header button carrying letters. Accent-tinted as it was in the menu:
+// it is the only one in the bar that acts rather than opens or closes.
+.modal__action--language {
+  font-size: 0.78rem;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.08em;
+  color: var(--ui-accent);
+  border-color: color-mix(in srgb, var(--ui-accent) 45%, transparent);
+
+  &:hover {
+    background: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+  }
+}
+
+// An active filter announces itself, otherwise nothing distinguishes a filtered list from an empty
+// one.
+.modal__action.is-active {
+  color: var(--ui-accent);
+  border-color: color-mix(in srgb, var(--ui-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--ui-accent) 16%, transparent);
+}
+
+// The settings window sizes itself on its menu.
+//
+// A button menu has a natural width: the one that lets the buttons hold their full measure without
+// stretching. The window adjusts to it instead of imposing its own.
+//
+// `:has()` rather than a variant passed as a property: the presence of the menu is what decides,
+// with nothing to thread through two components to say so.
+.modal:has(.pause) {
+  width: min(30rem, 100%);
+
+  .modal__body {
+    padding: 1rem;
+  }
+
+  .pause {
+    max-width: none;
+  }
+}
+
+

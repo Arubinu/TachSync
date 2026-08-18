@@ -1,0 +1,159 @@
+// The flush-edges row, at the foot of the edit modal.
+//
+// Full width and outside the columns: this setting is not about one face of the tile but about its
+// relation to the whole board.
+
+// Scale and spacing, at either end of a row of their own.
+//
+// Stacked in the right column they stretched it well past the layout picker, and the modal read as
+// two blocks of unrelated heights. Out here the two columns answer each other, and these two
+// dimension settings end up neighbours.
+.steppers {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-5);
+  margin-top: var(--sp-4);
+
+  &__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    // Each keeps its half: otherwise the wider one would push the other, and the row would decentre
+    // the first time it read "Theme".
+    flex: 1 1 0;
+    min-width: 0;
+
+    // Taken from `.modal__column h3`, whose rule is confined to the columns: these headings must
+    // stay those of the rest of the modal.
+    h3 {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      color: var(--ui-text-muted);
+      font-weight: var(--fw-medium);
+    }
+  }
+}
+
+.edges {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  // A hairline rather than a frame: the row detaches from the columns without becoming another box
+  // in an already dense panel.
+  border-top: 1px solid var(--ui-border);
+
+  &__label {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tr-overline);
+    color: var(--ui-text-muted);
+    font-weight: var(--fw-medium);
+  }
+
+  &__buttons {
+    display: flex;
+    gap: var(--sp-2);
+    flex: none;
+  }
+
+  &__button {
+    position: relative;
+    // So the cancellation bar follows the button's rounded corners instead of sticking out at the
+    // points.
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    // Square, so both dimensions follow the same step: giving them the horizontal padding of text
+    // buttons would have stretched them, when they hold only a centred pictogram.
+    width: var(--control-h-sm);
+    height: var(--control-h-sm);
+    padding: 0;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--r-md);
+    // The same fill as the stateful buttons in the rows above: they are controls of the same kind,
+    // and a transparent background made them look like plain pictograms laid on the window.
+    background: var(--ui-surface);
+    color: var(--ui-text-muted);
+    cursor: pointer;
+
+    svg {
+      width: 1.4rem;
+      height: 1.4rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.2;
+    }
+
+    &:hover {
+      border-color: var(--ui-accent);
+    }
+  }
+
+  // The tile outline stays discreet: the side is what carries the meaning.
+  &__frame {
+    opacity: 0.4;
+  }
+
+  &__side {
+    stroke-width: 3.4;
+    stroke-linecap: round;
+  }
+
+
+  // --- The three states ------------------------------------------------------
+  //
+  // They must be distinguishable without reading the tooltip: outline only for following the
+  // position, filled for asserting it, struck through and dimmed for forbidding it. Three
+  // treatments of different kinds, not three shades of one colour - at this size a shade is
+  // invisible.
+
+  &__button--auto {
+    color: var(--ui-text-muted);
+  }
+
+  &__button--force {
+    border-color: var(--ui-accent);
+    // The tint sits on the same fill as the other three rather than on the window: mixed with
+    // transparent it would have shown a lighter background than its neighbours when only the colour
+    // should change.
+    background: color-mix(in srgb, var(--ui-accent) 18%, var(--ui-surface));
+    color: var(--ui-accent);
+  }
+
+  &__button--off {
+    color: color-mix(in srgb, var(--ui-text-muted) 55%, transparent);
+
+    // A bar from one corner of the button to the other, not just the inner square: it is not the
+    // tile being struck out, it is the setting being cancelled.
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      // A square's diagonal is root two times its side; any less and the bar would stop before the
+      // corners and look badly centred.
+      width: 142%;
+      height: 2px;
+      border-radius: var(--r-full);
+      background: var(--ui-danger);
+      transform: translate(-50%, -50%) rotate(-45deg);
+    }
+  }
+}
+
+
+// Two consecutive rows need no separation. The hairline detaches the block from the columns above
+// it; between dressing and edges it would cut apart two settings about the same thing, the tile's
+// skin.
+.edges + .edges {
+  border-top: none;
+  margin-top: var(--sp-3);
+  padding-top: 0;
+}
+
