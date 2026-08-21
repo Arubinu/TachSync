@@ -88,5 +88,8 @@ if (removed === 0) {
   console.log('Already clean.');
 } else {
   console.log(`\n${removed} path(s) removed, ${mb(freed)} freed.`);
-  console.log(all ? 'Run `npm install` before building again.' : 'Run `npm run build` to rebuild.');
+  if (all) console.log('Run `npm install` first.');
+  // Naming the web build alone would be a trap: Gradle reads generated sources under `android/`
+  // that only `cap sync` writes, so a build that skips it fails on a file it cannot find.
+  console.log('Then `npm run build` for the web, or `npm run android:sync` for Android.');
 }

@@ -20,6 +20,21 @@ export interface Translation {
    */
   readonly roadRules: string;
 
+  /**
+   * The screen that asks who is driving.
+   *
+   * Shown between the adapter and the board, and only when more than one person
+   * exists: with a single driver there is nothing to ask.
+   */
+  readonly driver: {
+    readonly title: string;
+    /** Under the title: how to reach the icons. */
+    readonly hold: string;
+    readonly addPhoto: string;
+    readonly removePhoto: string;
+    readonly chooseIcon: string;
+  };
+
   readonly terms: {
     readonly title: string;
     readonly lead: string;
@@ -101,10 +116,21 @@ export interface Translation {
     readonly vehicleDetected: string;
     readonly nameHint: string;
     /** The two full-scale values a vehicle carries. */
+    /**
+     * The car's grids, and who drives with each.
+     *
+     * People are listed on a grid rather than the grid hung off each person:
+     * two drivers who share one share the same object, so a tile moved by one
+     * has moved for the other.
+     */
+    readonly grids: string;
+    readonly gridCount: string;
+    readonly joinGrid: string;
+    readonly splitGrid: string;
+    readonly gridEmpty: string;
     readonly topSpeed: string;
     readonly redline: string;
     readonly duplicate: string;
-    readonly newProfile: string;
     readonly appearance: string;
     readonly background: string;
     readonly avatar: string;
@@ -136,20 +162,8 @@ export interface Translation {
     readonly export: string;
     readonly import: string;
     readonly remove: string;
-    readonly backupHint: string;
     /** Warning shown above the backup buttons. */
     readonly backupWarning: string;
-    /**
-     * Notice written into the archive itself.
-     *
-     * A backup resurfaces months later, on another device, with no application
-     * at hand to explain it — so it documents itself, in the language of the
-     * person who made it. Placeholders: `{settings}`, `{avatars}`, `{readme}`
-     * (entry names), `{list}` (the avatar inventory), `{ext}`.
-     */
-    readonly backupNotice: string;
-    /** Stands in for `{list}` when nothing was imported. */
-    readonly backupNoticeNoAvatars: string;
     readonly backupSaved: string;
     readonly backupSavedWithAvatars: string;
     readonly settingsRestored: string;
@@ -159,10 +173,19 @@ export interface Translation {
     readonly importBackground: string;
     readonly removeBackground: string;
     readonly importedImage: string;
-    readonly backupNoticeWallpaper: string;
     readonly defaultBackground: string;
     readonly noTheme: string;
     readonly previousAvatar: string;
+    /** Eyedropper button: enters and leaves the mode that hides an object. */
+    readonly hideObjects: string;
+    /** Said while aiming, so a tap that hides nothing is not taken for a fault. */
+    readonly hideObjectsHint: string;
+    /** Why the eyedropper is unavailable on this avatar. */
+    readonly hideObjectsUnsupported: string;
+    /** Refusal: this hide would leave the avatar with nothing drawn. */
+    readonly hideObjectsLastOne: string;
+    /** Brings back everything hidden on the current avatar. */
+    readonly showAllObjects: string;
     readonly nextAvatar: string;
     readonly close: string;
   };
@@ -188,6 +211,10 @@ export interface Translation {
 
   readonly editor: {
     readonly layout: string;
+    /** Tab holding the footprint picker. Short: it sits in a two-tab bar, not in a heading. */
+    readonly tabSize: string;
+    /** Tab holding everything the footprint is not. */
+    readonly tabOptions: string;
     /** Refusal shown for a resize that would encroach on a neighbour. */
     readonly noRoom: string;
     /**
@@ -201,8 +228,6 @@ export interface Translation {
     readonly holdForSettings: string;
     readonly scale: string;
     readonly layer: string;
-    readonly orientation: string;
-    readonly normal: string;
     readonly mirrored: string;
     readonly whenMissing: string;
     readonly missingOnVehicle: string;
@@ -220,6 +245,11 @@ export interface Translation {
     readonly spacing: string;
     /** Value shown when the tile defers to the theme's margin. */
     readonly spacingAuto: string;
+    /** The alignment control, and the three choices it cycles through. */
+    readonly align: string;
+    readonly alignLeft: string;
+    readonly alignCenter: string;
+    readonly alignRight: string;
     /** Full-width row: declared contact with the board edges. */
     /** How much of the theme's dressing the tile keeps: border, fill, or nothing. */
     readonly dressing: string;
@@ -270,11 +300,8 @@ export interface Translation {
     readonly exitEditMode: string;
     readonly back: string;
     readonly columns: string;
-    readonly columnsShort: string;
     readonly rows: string;
-    readonly rowsShort: string;
     readonly add: string;
-    readonly subtract: string;
     readonly activeLayer: string;
   };
 
@@ -299,6 +326,8 @@ export interface Translation {
   };
 
   readonly metrics: {
+    /** Marks a figure as the highest reached, not the current one. */
+    readonly peak: string;
     readonly speed: string;
     readonly rpm: string;
     readonly gear: string;
@@ -409,7 +438,6 @@ export interface Translation {
     readonly notAnImage: string;
     readonly imageTooLarge: string;
     readonly noTilesFound: string;
-    readonly storageUnavailable: string;
     readonly notAnEntity: string;
     readonly wrongEntityKind: string;
     readonly unreadableAvatarFile: string;

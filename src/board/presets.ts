@@ -91,6 +91,7 @@ export function tileFromPreset(
     flush: DEFAULT_FLUSH,
     spacing: null,
     chrome: DEFAULT_CHROME,
+    align: null,
     caption: DEFAULT_CAPTION,
     metrics: preset.metrics,
   };

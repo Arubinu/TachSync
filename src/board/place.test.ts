@@ -17,6 +17,7 @@ function tile(id: string, col: number, row: number, colSpan = 1, rowSpan = 1, la
     flush: DEFAULT_FLUSH,
     spacing: null,
     chrome: DEFAULT_CHROME,
+    align: null,
     caption: DEFAULT_CAPTION,
     metrics: ['speed'],
   };

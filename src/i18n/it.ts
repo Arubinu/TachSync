@@ -4,6 +4,13 @@ export const it: Translation = {
   languageName: 'Italiano',
   roadRules: 'Sulla strada pubblica vale prima di tutto il codice della strada. Questa applicazione non giustifica alcuna infrazione, e nessun passo della calibrazione ne richiede una.',
 
+  driver: {
+    title: 'Chi guida?',
+    hold: 'Tieni premuto un nome per cambiarne l’icona.',
+    addPhoto: 'Aggiungi una foto',
+    removePhoto: 'Rimuovi la foto',
+    chooseIcon: 'Scegli un’icona',
+  },
   terms: {
     title: 'Prima di guidare',
     lead: 'Questa applicazione mostra. Non guida.',
@@ -73,10 +80,14 @@ export const it: Translation = {
     profileName: 'Rinomina',
     vehicleDetected: 'Nuovo veicolo rilevato',
     nameHint: 'Tocca per dargli un nome, o fallo più tardi nelle impostazioni dei profili.',
+    grids: 'Griglie',
+    gridCount: '{count} griglia/e',
+    joinGrid: 'Unisciti',
+    splitGrid: 'Usare la mia',
+    gridEmpty: 'Ancora nessuno',
     topSpeed: 'Velocità max',
     redline: 'Limitatore',
     duplicate: 'Duplica',
-    newProfile: 'Nuovo',
     appearance: 'Aspetto',
     background: 'Sfondo',
     avatar: 'Avatar',
@@ -107,47 +118,7 @@ export const it: Translation = {
     export: 'Esporta',
     import: 'Importa',
     remove: 'Rimuovi',
-    backupHint:
-      'Impostazioni e avatar in un unico file .{ext}. Tutto vive in questo browser; l’importazione sostituisce tutto.',
     backupWarning: 'All’importazione viene azzerato tutto!',
-    backupNotice: `BACKUP TACHSYNC
-===============
-
-Questo file è un normale ARCHIVIO ZIP, con un'estensione propria
-dell'applicazione. Per aprirlo con lo strumento del tuo sistema,
-rinominalo in .zip — non serve altro.
-
-CONTENUTO
----------
-
-  {settings}
-      Le tue impostazioni, in JSON indentato: disposizione dei riquadri
-      per orientamento, riquadri e sfondi importati, avatar scelto,
-      scala del testo. Leggibile e modificabile in qualsiasi editor.
-
-  {avatars}
-      I file di avatar che avevi importato, così come sono (.riv, .glb
-      o .gltf). Non entrano nel file di impostazioni: sono binari di
-      diversi megabyte.
-
-{list}{wallpaper}
-
-  {readme}
-      Questa nota.
-
-RIPRISTINARE
-------------
-
-Impostazioni -> Backup -> Importa, e scegli questo file. Impostazioni e
-avatar vengono ripristinati insieme.
-
-L'importazione SOSTITUISCE l'intera configurazione esistente.
-
-Sono accettati solo i file .{ext}. Se hai solo un vecchio {settings}
-isolato, mettilo in un archivio zip con quel nome esatto, rinomina
-l'archivio in .{ext} e verrà letto normalmente.
-`,
-    backupNoticeNoAvatars: '  (nessun avatar importato al momento del backup)',
     backupSaved: 'Backup salvato.',
     backupSavedWithAvatars: 'Backup salvato, con {count} avatar.',
     settingsRestored: 'Impostazioni ripristinate.',
@@ -157,10 +128,14 @@ l'archivio in .{ext} e verrà letto normalmente.
     importBackground: 'Importa un’immagine',
     removeBackground: 'Rimuovi l’immagine',
     importedImage: 'Immagine importata',
-    backupNoticeWallpaper: '  wallpaper/\n      L’immagine di sfondo che avevi importato, così com’è.',
     defaultBackground: 'Predefinito',
     noTheme: 'Senza tema',
     previousAvatar: 'Avatar precedente',
+    hideObjects: 'Nascondi un oggetto',
+    hideObjectsHint: 'Tocca un oggetto per nasconderlo. Tocca di nuovo il pulsante per uscire.',
+    hideObjectsUnsupported: 'Questo avatar non espone i suoi oggetti uno per uno.',
+    hideObjectsLastOne: 'Deve restare visibile almeno un oggetto.',
+    showAllObjects: 'Mostra di nuovo tutto',
     nextAvatar: 'Avatar successivo',
     close: 'Chiudi',
   },
@@ -182,14 +157,14 @@ l'archivio in .{ext} e verrà letto normalmente.
   },
 
   editor: {
-    layout: 'Disposizione',
+    layout: 'Ridimensiona',
+    tabSize: 'Dimensione',
+    tabOptions: 'Opzioni',
     noRoom: 'Spazio insufficiente: un altro riquadro occupa il posto.',
     boardFull: 'Spazio insufficiente: il cruscotto è troppo pieno.',
     holdForSettings: 'Tieni premuto per aprire le impostazioni.',
     scale: 'Scala',
     layer: 'Livello',
-    orientation: 'Orientamento',
-    normal: 'Normale',
     mirrored: 'Speculare',
     whenMissing: 'Se il valore manca',
     missingOnVehicle: 'Questo valore non esiste sul veicolo collegato.',
@@ -206,6 +181,10 @@ l'archivio in .{ext} e verrà letto normalmente.
     tile: 'Riquadro',
     spacing: 'Spaziatura',
     spacingAuto: 'Tema',
+    align: 'Allineamento',
+    alignLeft: 'Sinistra',
+    alignCenter: 'Centrato',
+    alignRight: 'Destra',
     dressing: 'Finitura',
     caption: 'Didascalia',
     captions: {
@@ -239,11 +218,8 @@ l'archivio in .{ext} e verrà letto normalmente.
     exitEditMode: 'Esci dalla modalità modifica',
     back: 'Torna al menu precedente',
     columns: 'Colonne',
-    columnsShort: 'Col.',
     rows: 'Righe',
-    rowsShort: 'Rig.',
     add: 'aumenta',
-    subtract: 'riduci',
     activeLayer: 'Livello attivo: {layer}. Passa al successivo',
   },
 
@@ -268,6 +244,7 @@ l'archivio in .{ext} e verrà letto normalmente.
   },
 
   metrics: {
+    peak: 'max',
     speed: 'Velocità',
     rpm: 'Regime',
     gear: 'Marcia',
@@ -374,7 +351,6 @@ l'archivio in .{ext} e verrà letto normalmente.
     notAnImage: 'Questo file non è un’immagine!',
     imageTooLarge: 'Immagine troppo pesante: {size} MB (max 16).',
     noTilesFound: 'Nessun riquadro né sfondo trovato in questo file.',
-    storageUnavailable: 'Archiviazione non disponibile.',
     notAnEntity: 'Questo file non proviene da TachSync.',
     wrongEntityKind: 'Questo file non contiene {kind}.',
     unreadableAvatarFile: 'Impossibile leggere il file dell’avatar.',

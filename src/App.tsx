@@ -4,6 +4,7 @@ import { ConnectScreen } from './board/ConnectScreen';
 import { CaptureGuide } from './board/CaptureGuide';
 import { CalibrationScreen } from './board/CalibrationScreen';
 import { TermsScreen } from './board/TermsScreen';
+import { DriverScreen } from './board/DriverScreen';
 import type { CalibrationResult } from './obd/calibrationRun';
 import type { DriveMode } from './analysis/driveMode';
 import { TransportRecorder } from './obd/recorder';
@@ -32,7 +33,10 @@ import { cycleAvatar } from './avatar/registry';
 import { CATALOGUES, TranslationContext, format, nextLanguage } from './i18n';
 import { findPreset, presetLabel } from './board/presets';
 import { Backdrop } from './board/Backdrop';
+import { useTipMessage } from './board/Tip';
 import { useWallpaper } from './board/useWallpaper';
+import { useVehiclePhoto } from './profiles/useVehiclePhoto';
+import { adoptPhoto, listPhotos } from './profiles/photo';
 import { WALLPAPER_ID } from './board/wallpaper';
 import { resolveBackground } from './board/backgrounds';
 import { ScopedTileStyles } from './board/ScopedTileStyles';
@@ -46,7 +50,7 @@ import { TelemetryStore } from './telemetry/TelemetryStore';
 import type { AnyChannel } from './telemetry/types';
 import { themeToCssVariables } from './theme/themes';
 import { lightenTheme } from './theme/light';
-import { clearTrips, listTrips, saveTrip } from './trips/store';
+import { clearTrips, deleteTrip, listTrips, saveTrip } from './trips/store';
 import { readBaseline } from './analysis/baseline';
 import type { TripRecord } from './trips/types';
 import { useTripRecording } from './trips/useTripRecording';
@@ -96,10 +100,23 @@ export function App(): React.JSX.Element {
     [],
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /** Answered once per launch. Reset when the source goes, since that starts the sequence again. */
+  const [driverChosen, setDriverChosen] = useState(false);
+
   const [catalogOpen, setCatalogOpen] = useState(false);
   const [editingTileId, setEditingTileId] = useState<string | null>(null);
   const [importReport, setImportReport] = useState<string | null>(null);
-  const [settingsReport, setSettingsReport] = useState<string | null>(null);
+  /*
+   * The last word on a backup: saved, restored, or refused.
+   *
+   * A bubble like every other answer to a gesture. Inline it sat inside the frame that warns what
+   * a restore replaces, pushing that warning down at the exact moment it mattered most.
+   */
+  const {
+    text: settingsReport,
+    id: settingsReportId,
+    say: setSettingsReport,
+  } = useTipMessage();
   const [calibrating, setCalibrating] = useState(false);
   const [activeLayer, setActiveLayer] = useState<LayerIndex>(1);
   const [status, setStatus] = useState<ConnectionStatus>('disconnected');
@@ -184,6 +201,24 @@ export function App(): React.JSX.Element {
     activeVehicle(profiles).calibration,
   );
 
+  /**
+   * The active vehicle, as everything that groups by car needs it.
+   *
+   * The id is the identity; the label is only how it reads today, and is recomputed here so a
+   * rename shows up at once in the list.
+   */
+  const vehicleIdentity = useMemo(
+    () => ({
+      id: activeVehicle(profiles).id,
+      label: entityLabel(
+        activeVehicle(profiles),
+        profiles.vehicles.indexOf(activeVehicle(profiles)),
+        translation.settings.vehicleProfile,
+      ),
+    }),
+    [profiles, translation],
+  );
+
   /*
    * The driver's own ordinary, when they asked for it.
    *
@@ -191,26 +226,27 @@ export function App(): React.JSX.Element {
    * baseline across both would describe neither. Zero while the setting is off, which restores the
    * fixed thresholds exactly - nothing is rewritten, the trips are only read.
    */
+  // The launch sequence restarts with the source: disconnecting and reconnecting is a new drive,
+  // and possibly a new driver.
+  useEffect(() => {
+    if (sourceKind === null) setDriverChosen(false);
+  }, [sourceKind]);
+
+  /** The active car's photograph, for the screen that asks who is driving and for its file. */
+  const vehiclePhoto = useVehiclePhoto(vehicleIdentity.id, translation);
+
   const baselineShift = useMemo(() => {
     if (!settings.useTripHistory) return 0;
-    const label = entityLabel(
-      activeVehicle(profiles),
-      profiles.vehicles.indexOf(activeVehicle(profiles)),
-      translation.settings.vehicleProfile,
-    );
-    return readBaseline(trips, label)?.shift ?? 0;
-  }, [settings.useTripHistory, trips, profiles, translation]);
+    return readBaseline(trips, vehicleIdentity)?.shift ?? 0;
+  }, [settings.useTripHistory, trips, vehicleIdentity]);
 
   const { restart: restartTrip } = useTripRecording({
     store,
     source: sourceKind,
     // The profile's vehicle, not the simulator's physical spec: a trip belongs to the user's car,
     // not to the model used to fabricate frames.
-    vehicle: entityLabel(
-      activeVehicle(profiles),
-      profiles.vehicles.indexOf(activeVehicle(profiles)),
-      translation.settings.vehicleProfile,
-    ),
+    vehicleId: vehicleIdentity.id,
+    vehicle: vehicleIdentity.label,
     redline: activeVehicle(profiles).ranges.redline,
     onSaved: refreshTrips,
   });
@@ -381,7 +417,13 @@ export function App(): React.JSX.Element {
   async function exportBackup(): Promise<void> {
     const avatars = await avatarLibrary.records();
     downloadBackup(
-      await createBackup(profiles, trips, avatars, wallpaperLibrary.wallpaper, translation),
+      await createBackup(
+        profiles,
+        trips,
+        avatars,
+        wallpaperLibrary.wallpaper,
+        await listPhotos(),
+      ),
       backupFileName(),
     );
     setSettingsReport(
@@ -422,6 +464,10 @@ export function App(): React.JSX.Element {
     // Restored without selecting it: the look that came with the backup already says whether it
     // was in use, and forcing the choice would override what the file itself carries.
     if (result.wallpaper !== null) await wallpaperLibrary.importFile(result.wallpaper);
+
+    // Each against the car it came from: the archive keeps that pairing in the folder name, which
+    // is the only thing that survives two vehicles photographed from the same phone.
+    for (const { vehicleId, file } of result.photos) await adoptPhoto(vehicleId, file, translation);
 
     setSettingsReport(
       result.avatars.length === 0
@@ -626,6 +672,8 @@ export function App(): React.JSX.Element {
       onProfilesChange={setProfiles}
       trips={trips}
       onClearTrips={() => void clearTrips().then(refreshTrips)}
+      // The trace goes with it - see `deleteTrip`, which owns both stores.
+      onDeleteTrip={(id) => void deleteTrip(id).then(refreshTrips)}
       onResetTrip={() => {
         store.resetTrip();
         // The recorder restarts with the counters: otherwise it would see its distance shrink and
@@ -636,6 +684,16 @@ export function App(): React.JSX.Element {
       onExport={() => void exportBackup()}
       onImportSettings={(file: File) => void importBackup(file)}
       library={avatarLibrary}
+      vehiclePhoto={vehiclePhoto.photo}
+      /*
+       * A picture that came in a file, stored against the car it was just given to.
+       *
+       * Its refusal is swallowed: the vehicle itself imported cleanly, and reporting a picture
+       * problem over that would leave the user thinking the car had not arrived.
+       */
+      onAdoptPhoto={(id: string, file: File) => {
+        void adoptPhoto(id, file, translation);
+      }}
       wallpaper={wallpaperLibrary.wallpaper}
       wallpaperReport={wallpaperLibrary.report}
       wallpaperReportId={wallpaperLibrary.reportId}
@@ -681,6 +739,7 @@ export function App(): React.JSX.Element {
       }
       source={sourceKind}
       settingsReport={settingsReport}
+      settingsReportId={settingsReportId}
       onClose={() => setSettingsOpen(false)}
     />
   ) : null;
@@ -700,6 +759,39 @@ export function App(): React.JSX.Element {
             setSettings((current) => ({ ...current, language: nextLanguage(current.language) }))
           }
           onAccept={() => setSettings((current) => ({ ...current, termsAccepted: true }))}
+        />
+      </TranslationContext>
+    );
+  }
+
+  /*
+   * Who is driving, once a car is known and only when the question has an answer to give.
+   *
+   * After the adapter rather than before: the screen shows the car's photograph, and which car it
+   * is only becomes known when the adapter names it. Asked once per launch - a driver does not
+   * change mid-drive, and asking again on every return to the board would be a toll.
+   */
+  if (sourceKind !== null && profiles.people.length > 1 && !driverChosen) {
+    return (
+      <TranslationContext value={translation}>
+        <DriverScreen
+          people={profiles.people}
+          vehicleLabel={vehicleIdentity.label}
+          photoUrl={vehiclePhoto.url}
+          onPickPerson={(personId) => {
+            setProfiles((current) => ({ ...current, personId }));
+            setDriverChosen(true);
+          }}
+          onPickIcon={(personId, icon) =>
+            setProfiles((current) => ({
+              ...current,
+              people: current.people.map((person) =>
+                person.id === personId ? { ...person, icon } : person,
+              ),
+            }))
+          }
+          onImportPhoto={(file) => void vehiclePhoto.importFile(file)}
+          onRemovePhoto={() => void vehiclePhoto.remove()}
         />
       </TranslationContext>
     );
@@ -860,6 +952,8 @@ export function App(): React.JSX.Element {
         <TileEditor
           tile={editingTile}
           title={tileTitle(editingTile)}
+          theme={theme}
+          avatarId={settings.avatarId}
           preset={findPreset(editingTile.presetId ?? '', settings.presets)}
           tiles={layout.tiles}
           columns={layout.columns}

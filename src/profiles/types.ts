@@ -25,6 +25,8 @@ export interface Appearance {
   /** `null` means the background supplied by the theme. */
   readonly backgroundId: string | null;
   readonly avatarId: string;
+  /** Objects hidden on each avatar, by avatar id. Belongs to the look, like the avatar itself. */
+  readonly hiddenAvatarParts: Readonly<Record<string, readonly string[]>>;
   readonly fontScale: number;
   readonly light: boolean;
 }
@@ -35,6 +37,29 @@ export interface Person {
   readonly label: string;
   /** Chosen appearance. Several people may point at the same one. */
   readonly appearanceId: string;
+  /**
+   * The face on their button, by id.
+   *
+   * A name is read; a face is recognised. On the screen that asks who is driving, the icon is what
+   * lets someone answer without reading, which is the whole point of asking there rather than in a
+   * settings list.
+   */
+  readonly icon: string;
+}
+
+/**
+ * One grid, and who drives with it.
+ *
+ * People are listed on the grid rather than the grid being hung off each person: two drivers who
+ * share a board share this object, so a tile moved by one has moved for the other. Nothing is
+ * synchronised because nothing was duplicated.
+ */
+export interface VehicleLayout {
+  readonly id: string;
+  /** Person ids. Empty on a grid nobody has been placed on yet - the car's default. */
+  readonly people: readonly string[];
+  readonly portrait: LayoutConfig;
+  readonly landscape: LayoutConfig;
 }
 
 /**
@@ -47,8 +72,13 @@ export interface Vehicle {
   readonly id: string;
   readonly label: string;
   readonly adapterId: string | null;
-  /** Grid and tiles, per orientation. Composed for this car. */
-  readonly layouts: { readonly portrait: LayoutConfig; readonly landscape: LayoutConfig };
+  /**
+   * The car's grids, one per group of drivers. Never empty.
+   *
+   * Composed for this car - a grid is made for one screen size and one set of tiles, which is why
+   * it lives here and not as an entity of its own that could be hung on any vehicle.
+   */
+  readonly layouts: readonly VehicleLayout[];
   /** Gauge full-scale values. See `VehicleRanges`. */
   readonly ranges: VehicleRanges;
   /** What the calibration measured on this car, or `null` if it was never run. */

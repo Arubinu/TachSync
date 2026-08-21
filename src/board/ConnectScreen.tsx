@@ -182,7 +182,9 @@ export function ConnectScreen({
         </p>
       )}
       {discovery.reason !== null && (
-        <p className="connect__hint">{t.discovery[discovery.reason]}</p>
+        <p className="connect__hint">
+          <Sentences text={t.discovery[discovery.reason]} />
+        </p>
       )}
       {error !== null && <p className="connect__error">{error}</p>}
     </div>

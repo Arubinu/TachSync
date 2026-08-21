@@ -1,5 +1,12 @@
 import * as THREE from 'three';
-import type { AvatarFrameState, AvatarInstance, AvatarMood, AvatarPalette } from '../types';
+import { meshPicking } from '../pickMesh';
+import type {
+  AvatarFrameState,
+  AvatarInstance,
+  AvatarMood,
+  AvatarPalette,
+  AvatarPicking,
+} from '../types';
 
 /**
  * Plush companion.
@@ -62,6 +69,8 @@ class PlushCompanion implements AvatarInstance {
   #keyLight: THREE.DirectionalLight;
   #disposables: Array<THREE.BufferGeometry | THREE.Material> = [];
 
+  readonly picking: AvatarPicking;
+
   // Current values, eased towards the target posture: that glide is what avoids square-wave mood
   // changes.
   #eyeOpen = 1;
@@ -112,6 +121,8 @@ class PlushCompanion implements AvatarInstance {
 
     this.#build();
     this.#scene.add(this.#root);
+    // After `#build`: the groups take their names there, and picking stores those names.
+    this.picking = meshPicking(this.#canvas, this.#camera, this.#root);
     this.setPalette(palette);
   }
 
@@ -128,6 +139,20 @@ class PlushCompanion implements AvatarInstance {
   }
 
   #build(): void {
+    /*
+     * Names for the groups, so hiding a piece has something durable to store.
+     *
+     * Without them picking would fall back to `uuid`, which three.js regenerates on every load: a
+     * hidden ear would come back on the next start. These are ids, never shown to the user.
+     */
+    this.#head.name = 'head';
+    this.#body.name = 'body';
+    this.#earLeft.name = 'earLeft';
+    this.#earRight.name = 'earRight';
+    this.#eyeLeft.name = 'eyeLeft';
+    this.#eyeRight.name = 'eyeRight';
+    this.#tail.name = 'tail';
+
     const fur = this.#matte(FUR_LIGHT);
     const patch = this.#matte(FUR_PATCH);
     const shadow = this.#matte(FUR_SHADOW);

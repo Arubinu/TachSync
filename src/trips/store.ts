@@ -1,4 +1,6 @@
 import { BY_START, run, TRIPS } from '../storage/db';
+import { normalizeTrip } from './identity';
+import { clearTraces, deleteTrace } from './trace';
 import type { TripRecord } from './types';
 
 /**
@@ -17,7 +19,7 @@ export async function listTrips(): Promise<readonly TripRecord[]> {
     const all = await run<TripRecord[]>(TRIPS, 'readonly', (store) =>
       store.index(BY_START).getAll(),
     );
-    return all.reverse();
+    return all.reverse().map(normalizeTrip);
   } catch {
     return [];
   }
@@ -27,10 +29,19 @@ export async function saveTrip(trip: TripRecord): Promise<void> {
   await run(TRIPS, 'readwrite', (store) => store.put(trip));
 }
 
+/**
+ * Removes a trip and the trace that belongs to it.
+ *
+ * Two stores, so two deletions - and the trace goes first is not the point; that it goes at all is.
+ * A trace outliving its trip would be unreachable and unaccountable: nothing lists traces, so it
+ * would sit in storage with no screen able to name it.
+ */
 export async function deleteTrip(id: string): Promise<void> {
   await run(TRIPS, 'readwrite', (store) => store.delete(id));
+  await deleteTrace(id);
 }
 
 export async function clearTrips(): Promise<void> {
   await run(TRIPS, 'readwrite', (store) => store.clear());
+  await clearTraces();
 }

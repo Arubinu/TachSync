@@ -4,6 +4,13 @@ export const fr: Translation = {
   languageName: 'Français',
   roadRules: 'Sur la voie publique, le code de la route prime. Cette application ne justifie aucune infraction, et aucune étape de la calibration n’en demande.',
 
+  driver: {
+    title: 'Qui conduit ?',
+    hold: 'Reste appuyé sur un nom pour changer son icône.',
+    addPhoto: 'Ajouter une photo',
+    removePhoto: 'Supprimer la photo',
+    chooseIcon: 'Choisir une icône',
+  },
   terms: {
     title: 'Avant de rouler',
     lead: 'Cette application affiche. Elle ne conduit pas.',
@@ -73,10 +80,14 @@ export const fr: Translation = {
     profileName: 'Renommer',
     vehicleDetected: 'Nouveau véhicule détecté',
     nameHint: 'Appuyez pour le nommer, ou faites-le plus tard dans les réglages de profils.',
+    grids: 'Grilles',
+    gridCount: '{count} grille(s)',
+    joinGrid: 'Rejoindre',
+    splitGrid: 'Avoir la mienne',
+    gridEmpty: 'Personne pour l’instant',
     topSpeed: 'Vitesse max',
     redline: 'Rupteur',
     duplicate: 'Dupliquer',
-    newProfile: 'Nouveau',
     appearance: 'Apparence',
     background: 'Fond',
     avatar: 'Avatar',
@@ -107,47 +118,7 @@ export const fr: Translation = {
     export: 'Exporter',
     import: 'Importer',
     remove: 'Retirer',
-    backupHint:
-      'Réglages et avatars en un seul fichier .{ext}. Tout vit dans ce navigateur ; l’import remplace tout.',
     backupWarning: 'Remise à zéro lors de l’importation !',
-    backupNotice: `SAUVEGARDE TACHSYNC
-===================
-
-Ce fichier est une ARCHIVE ZIP ordinaire, sous une extension propre à
-l'application. Pour l'ouvrir avec l'outil de ton système, renomme-le en
-.zip — rien d'autre n'est nécessaire.
-
-CONTENU
--------
-
-  {settings}
-      Tes réglages, en JSON indenté : disposition des tuiles par
-      orientation, tuiles et fonds importés, avatar choisi, échelle du
-      texte. Lisible et modifiable dans n'importe quel éditeur de texte.
-
-  {avatars}
-      Les fichiers d'avatars que tu avais importés, tels quels (.riv,
-      .glb ou .gltf). Ils ne tiennent pas dans le fichier de réglages :
-      ce sont des binaires de plusieurs mégaoctets.
-
-{list}{wallpaper}
-
-  {readme}
-      Cette notice.
-
-RESTAURER
----------
-
-Réglages -> Sauvegarde -> Importer, et choisis ce fichier. Les réglages
-et les avatars sont rétablis ensemble.
-
-L'import REMPLACE l'ensemble de la configuration existante.
-
-Seuls les fichiers .{ext} sont acceptés. Si tu n'as qu'un ancien
-{settings} isolé, place-le dans une archive zip sous ce nom exact,
-renomme l'archive en .{ext}, et elle sera relue normalement.
-`,
-    backupNoticeNoAvatars: '  (aucun avatar importé au moment de la sauvegarde)',
     backupSaved: 'Sauvegarde enregistrée.',
     backupSavedWithAvatars: 'Sauvegarde enregistrée, avec {count} avatar(s).',
     settingsRestored: 'Réglages restaurés.',
@@ -157,10 +128,14 @@ renomme l'archive en .{ext}, et elle sera relue normalement.
     importBackground: 'Importer une image',
     removeBackground: 'Supprimer l’image',
     importedImage: 'Image importée',
-    backupNoticeWallpaper: '  wallpaper/\n      L’image de fond que vous aviez importée, telle quelle.',
     defaultBackground: 'Par défaut',
     noTheme: 'Sans thème',
     previousAvatar: 'Avatar précédent',
+    hideObjects: 'Masquer un objet',
+    hideObjectsHint: 'Touche un objet pour le masquer. Retouche le bouton pour sortir.',
+    hideObjectsUnsupported: 'Cet avatar n’expose pas ses objets un à un.',
+    hideObjectsLastOne: 'Il doit rester au moins un objet visible.',
+    showAllObjects: 'Tout réafficher',
     nextAvatar: 'Avatar suivant',
     close: 'Fermer',
   },
@@ -182,14 +157,14 @@ renomme l'archive en .{ext}, et elle sera relue normalement.
   },
 
   editor: {
-    layout: 'Mise en page',
+    layout: 'Redimensionnement',
+    tabSize: 'Taille',
+    tabOptions: 'Options',
     noRoom: 'Pas la place : une autre tuile occupe le terrain.',
     boardFull: 'Pas la place : le plateau est trop occupé.',
     holdForSettings: 'Reste appuyé pour ouvrir les réglages.',
     scale: 'Échelle',
     layer: 'Couche',
-    orientation: 'Orientation',
-    normal: 'Normale',
     mirrored: 'Miroir',
     whenMissing: 'Si la valeur manque',
     missingOnVehicle: 'Cette valeur n’existe pas sur le véhicule connecté.',
@@ -206,6 +181,10 @@ renomme l'archive en .{ext}, et elle sera relue normalement.
     tile: 'Tuile',
     spacing: 'Espacement',
     spacingAuto: 'Thème',
+    align: 'Alignement',
+    alignLeft: 'Gauche',
+    alignCenter: 'Centré',
+    alignRight: 'Droite',
     dressing: 'Habillage',
     caption: 'Libellé',
     captions: {
@@ -239,11 +218,8 @@ renomme l'archive en .{ext}, et elle sera relue normalement.
     exitEditMode: 'Quitter le mode édition',
     back: 'Revenir au menu précédent',
     columns: 'Colonnes',
-    columnsShort: 'Col.',
     rows: 'Lignes',
-    rowsShort: 'Lig.',
     add: 'ajouter',
-    subtract: 'retirer',
     activeLayer: 'Couche active : {layer}. Passer à la suivante',
   },
 
@@ -268,6 +244,7 @@ renomme l'archive en .{ext}, et elle sera relue normalement.
   },
 
   metrics: {
+    peak: 'max',
     speed: 'Vitesse',
     rpm: 'Régime',
     gear: 'Rapport',
@@ -374,7 +351,6 @@ renomme l'archive en .{ext}, et elle sera relue normalement.
     notAnImage: 'Ce fichier n’est pas une image !',
     imageTooLarge: 'Image trop lourde : {size} Mo (max 16).',
     noTilesFound: 'Aucune tuile ni fond trouvés dans ce fichier.',
-    storageUnavailable: 'Stockage indisponible.',
     notAnEntity: 'Ce fichier ne vient pas de TachSync.',
     wrongEntityKind: 'Ce fichier ne contient pas de {kind}.',
     unreadableAvatarFile: 'Le fichier d’avatar n’a pas pu être lu.',

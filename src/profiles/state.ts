@@ -1,4 +1,5 @@
 import type { AppSettings } from '../board/layout';
+import { layoutFor } from './layouts';
 import type { Appearance, Person, Vehicle } from './types';
 
 /**
@@ -39,6 +40,7 @@ const OWNERS = {
   themeId: 'appearance',
   backgroundId: 'appearance',
   avatarId: 'appearance',
+  hiddenAvatarParts: 'appearance',
   fontScale: 'appearance',
   light: 'appearance',
   layouts: 'vehicle',
@@ -74,14 +76,18 @@ export function activeAppearance(state: ProfileState): Appearance {
 export function resolveSettings(state: ProfileState): AppSettings {
   const appearance = activeAppearance(state);
   const vehicle = activeVehicle(state);
+  const mine = layoutFor(vehicle, state.personId);
 
   return {
     themeId: appearance.themeId,
     backgroundId: appearance.backgroundId,
     avatarId: appearance.avatarId,
+    hiddenAvatarParts: appearance.hiddenAvatarParts,
     fontScale: appearance.fontScale,
     light: appearance.light,
-    layouts: vehicle.layouts,
+    // The pair alone: the grid's id and its members belong to the vehicle, and would otherwise
+    // travel into the flat settings, into storage, and out into every backup.
+    layouts: { portrait: mine.portrait, landscape: mine.landscape },
     ...state.shared,
   };
 }
@@ -95,11 +101,23 @@ export function resolveSettings(state: ProfileState): AppSettings {
 export function applySettings(state: ProfileState, next: AppSettings): ProfileState {
   const appearance = activeAppearance(state);
   const vehicle = activeVehicle(state);
+  const mine = layoutFor(vehicle, state.personId);
   const current = resolveSettings(state);
 
-  const changed = (Object.keys(OWNERS) as (keyof AppSettings)[]).filter(
-    (key) => next[key] !== current[key],
-  );
+  /*
+   * Identity, except for the layouts, where the wrapper is built fresh on every resolve.
+   *
+   * Comparing that wrapper would report a change at every call and rewrite the vehicle each time.
+   * The two orientations inside it ARE the stored objects, so their identity still means what it
+   * always meant.
+   */
+  const same = (key: keyof AppSettings): boolean =>
+    key === 'layouts'
+      ? next.layouts.portrait === current.layouts.portrait &&
+        next.layouts.landscape === current.layouts.landscape
+      : next[key] === current[key];
+
+  const changed = (Object.keys(OWNERS) as (keyof AppSettings)[]).filter((key) => !same(key));
   if (changed.length === 0) return state;
 
   const touched = (owner: (typeof OWNERS)[keyof typeof OWNERS]): boolean =>
@@ -115,15 +133,29 @@ export function applySettings(state: ProfileState, next: AppSettings): ProfileSt
                 themeId: next.themeId,
                 backgroundId: next.backgroundId,
                 avatarId: next.avatarId,
+                hiddenAvatarParts: next.hiddenAvatarParts,
                 fontScale: next.fontScale,
                 light: next.light,
               }
             : item,
         )
       : state.appearances,
+    /*
+     * Only the driver's own grid is rewritten.
+     *
+     * Writing the pair back onto the vehicle would hand every driver of that car the grid of
+     * whoever last touched it - the same mistake the appearance guard avoids one field above.
+     */
     vehicles: touched('vehicle')
       ? state.vehicles.map((item) =>
-          item.id === vehicle.id ? { ...item, layouts: next.layouts } : item,
+          item.id !== vehicle.id
+            ? item
+            : {
+                ...item,
+                layouts: item.layouts.map((layout) =>
+                  layout.id === mine.id ? { ...layout, ...next.layouts } : layout,
+                ),
+              },
         )
       : state.vehicles,
     shared: touched('shared')

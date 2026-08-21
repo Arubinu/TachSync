@@ -1,6 +1,8 @@
-import { DEFAULT_SETTINGS, normalizeLayouts, type AppSettings } from '../board/layout';
+import { DEFAULT_SETTINGS, type AppSettings } from '../board/layout';
 import type { ProfileState } from './state';
 import { DEFAULT_RANGES } from './types';
+import { normalizeVehicleLayouts } from './layouts';
+import { DEFAULT_PERSON_ICON } from '../board/personIcons';
 
 /** Ids of the entities created by the migration, so they can be found again. */
 export const FIRST_PERSON = 'person-1';
@@ -20,14 +22,16 @@ export const FIRST_APPEARANCE = 'appearance-1';
  */
 export function toProfileState(settings: AppSettings): ProfileState {
   return {
-    people: [{ id: FIRST_PERSON, label: '', appearanceId: FIRST_APPEARANCE }],
+    people: [
+      { id: FIRST_PERSON, label: '', appearanceId: FIRST_APPEARANCE, icon: DEFAULT_PERSON_ICON },
+    ],
     vehicles: [
       {
         id: FIRST_VEHICLE,
         label: '',
         adapterId: null,
         calibration: null,
-        layouts: settings.layouts,
+        layouts: [{ id: 'grid-1', people: [FIRST_PERSON], ...settings.layouts }],
         ranges: DEFAULT_RANGES,
       },
     ],
@@ -38,6 +42,7 @@ export function toProfileState(settings: AppSettings): ProfileState {
         themeId: settings.themeId,
         backgroundId: settings.backgroundId,
         avatarId: settings.avatarId,
+        hiddenAvatarParts: settings.hiddenAvatarParts,
         fontScale: settings.fontScale,
         light: settings.light,
       },
@@ -84,27 +89,36 @@ export function readProfileState(raw: unknown, settings: AppSettings): ProfileSt
 
   // A vehicle saved before scales existed has none: give it the previous values so nothing moves on
   // screen.
-  //
-  // Layouts go back through the normaliser for the same reason: they live here, inside the vehicle,
-  // and so escape the flat-settings one. Without this an inherited overlap would outlive the rule
-  // meant to forbid it, since nothing would ever read it again.
   const repaired = vehicles.map((vehicle) => ({
     ...vehicle,
     ranges: { ...DEFAULT_RANGES, ...vehicle.ranges },
     // Absent on every vehicle saved before calibration existed. `null` is the honest value: never
     // run is not the same as run and found nothing.
     calibration: vehicle.calibration ?? null,
-    layouts: normalizeLayouts({ layouts: vehicle.layouts }),
+    // A vehicle saved before grids could be shared holds one pair for everybody; it becomes the
+    // car's first grid, with the reader on it - which is exactly what they had.
+    layouts: normalizeVehicleLayouts(vehicle.layouts, person.id),
+  }));
+
+  // Absent from every person saved before icons existed. They all start from the same face rather
+  // than from none, which would leave the choice screen with empty buttons.
+  const faced = people.map((item) => ({ ...item, icon: item.icon ?? DEFAULT_PERSON_ICON }));
+
+  // Absent from every appearance saved before objects could be hidden. An empty map, not `null`:
+  // the panel indexes it by avatar id on first render, and there is no avatar hiding anything yet.
+  const dressed = appearances.map((item) => ({
+    ...item,
+    hiddenAvatarParts: item.hiddenAvatarParts ?? {},
   }));
 
   return {
     people: orphan
-      ? people.map((item) =>
+      ? faced.map((item) =>
           item.id === person.id ? { ...item, appearanceId: appearances[0]!.id } : item,
         )
-      : people,
+      : faced,
     vehicles: repaired,
-    appearances,
+    appearances: dressed,
     personId: person.id,
     vehicleId: vehicle.id,
     shared: {

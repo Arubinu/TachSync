@@ -49,9 +49,15 @@ npm run dev
 | `npm run dev` | ontwikkelserver |
 | `npm run build` | typecontrole, daarna bouwen |
 | `npm test` | de testsuite |
-| `npm run android:apk` | bouwt de Android-APK |
-| `npm run android:install` | bouwt en installeert op een aangesloten toestel |
+| `npm run android:sync` | bouwt en kopieert het resultaat naar het Android-project |
+| `npm run android:apk` | bouwt de APK op basis van de laatste sync |
+| `npm run android:install` | synct, bouwt en installeert op een aangesloten toestel |
 | `npm run clean` | verwijdert alles wat gegenereerd is (`clean:all`: ook `node_modules`) |
+
+De APK belandt in `android/app/build/outputs/apk/debug/app-debug.apk`. Draai `android:sync` vóór
+`android:apk`: `npm run build` alleen vult `dist/` en schrijft niets onder `android/`, waardoor
+Gradle de vorige webbuild zou inpakken — of na een `clean` ronduit zou falen, die de gegenereerde
+Gradle-bronnen mee verwijdert.
 
 De Android-app vereist de Android-SDK en twee JDK's; zie
 `android/gradle.properties`, waar de reden staat uitgelegd.

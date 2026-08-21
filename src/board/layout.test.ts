@@ -9,7 +9,14 @@ import {
   GRID_ROWS,
   normalizeLayouts,
   defaultSpanFor,
+  SPACING_MIN,
+  normalizeAlign,
+  stepAlign,
+  SPACING_STEP,
   flushEdges,
+  forcedEdges,
+  type FlushMode,
+  type FlushSide,
   normalizeFlush,
   isCellFree,
   occupancyGrid,
@@ -64,11 +71,11 @@ describe('tile-specific spacing', () => {
     expect(stepSpacing(0, 1)).toBe(2);
   });
 
-  it('hands back to the theme when going below zero', () => {
-    // A negative margin would be meaningless; this is the only way back to the default without a
-    // dedicated control.
+  it('hands back to the theme on the way down past zero', () => {
+    // The default sits between the last positive step and the first negative one, so it is
+    // reachable without a control of its own. Going further gives a negative margin - see the
+    // ladder below, which is where that behaviour is pinned.
     expect(stepSpacing(0, -1)).toBeNull();
-    expect(stepSpacing(null, -1)).toBeNull();
   });
 
   it('caps the spacing at its maximum', () => {
@@ -124,6 +131,7 @@ function tile(
     flush: DEFAULT_FLUSH,
     spacing: null,
     chrome: 'default',
+    align: null,
     caption: DEFAULT_CAPTION,
     metrics: ['speed'],
   };
@@ -391,5 +399,109 @@ describe('tile caption', () => {
   it('refuses a setting it does not know', () => {
     // A hand-edited file, or one from a later version: an unknown word must not reach the tile.
     expect(caption('wherever')).toBe('show');
+  });
+});
+
+describe('the edges a carried tile keeps', () => {
+  const tile = (flush: Partial<Record<FlushSide, FlushMode>>, at: Partial<TileConfig> = {}) =>
+    ({
+      ...DEFAULT_LAYOUT.tiles[0]!,
+      colStart: 1,
+      rowStart: 1,
+      colSpan: 1,
+      rowSpan: 1,
+      ...at,
+      flush: { top: 'auto', left: 'auto', right: 'auto', bottom: 'auto', ...flush },
+    }) as TileConfig;
+
+  it('drops the sides it only touched by being where it was', () => {
+    // In the air it touches nothing: `auto` describes contact with a board the tile has left, and
+    // keeping it would graft the tile onto an edge it is no longer against.
+    const corner = tile({});
+
+    expect(flushEdges(corner, 4, 3)).toContain('top');
+    expect(forcedEdges(corner)).toBe('');
+  });
+
+  it('keeps the sides that were asked for outright', () => {
+    expect(forcedEdges(tile({ right: 'force' }))).toBe('right');
+  });
+
+  it('keeps a forced side even where the tile never touched one', () => {
+    // Middle of the board, forced left: the intent is the tile's, not the grid's.
+    const middle = tile({ left: 'force' }, { colStart: 2, rowStart: 2 });
+
+    expect(flushEdges(middle, 4, 3)).toBe('left');
+    expect(forcedEdges(middle)).toBe('left');
+  });
+
+  it('lists several in the order the sides are declared', () => {
+    expect(forcedEdges(tile({ top: 'force', bottom: 'force' }))).toBe('top bottom');
+  });
+});
+
+describe('the spacing ladder', () => {
+  it('steps down through the theme value, never past it', () => {
+    // The default has to be reachable, and reachable from the side one is on.
+    expect(stepSpacing(2, -1)).toBe(0);
+    expect(stepSpacing(0, -1)).toBeNull();
+    expect(stepSpacing(null, -1)).toBe(-SPACING_STEP);
+  });
+
+  it('steps back up through it the same way', () => {
+    expect(stepSpacing(-SPACING_STEP, 1)).toBeNull();
+    expect(stepSpacing(null, 1)).toBe(0);
+    expect(stepSpacing(0, 1)).toBe(SPACING_STEP);
+  });
+
+  it('goes negative, which is what lets a tile spill over its neighbours', () => {
+    expect(stepSpacing(-4, -1)).toBe(-6);
+  });
+
+  it('stops at both ends', () => {
+    expect(stepSpacing(SPACING_MAX, 1)).toBe(SPACING_MAX);
+    expect(stepSpacing(SPACING_MIN, -1)).toBe(SPACING_MIN);
+  });
+
+  it('never skips the theme value while climbing from the floor', () => {
+    // Walking the whole ladder: the default must appear exactly once.
+    let value: number | null = SPACING_MIN;
+    const seen: (number | null)[] = [value];
+    for (let i = 0; i < 40; i += 1) {
+      value = stepSpacing(value, 1);
+      seen.push(value);
+    }
+
+    expect(seen.filter((step) => step === null)).toHaveLength(1);
+    expect(seen).toContain(SPACING_MAX);
+  });
+});
+
+describe('per-tile alignment', () => {
+  it('cycles through the three, then back to the theme', () => {
+    expect(stepAlign(null)).toBe('left');
+    expect(stepAlign('left')).toBe('center');
+    expect(stepAlign('center')).toBe('right');
+    expect(stepAlign('right')).toBeNull();
+  });
+
+  it('keeps the theme value reachable, exactly once round the cycle', () => {
+    // Without it a round tile could never get its centring back: the `centered` arrangement exists
+    // because left-aligned text against a curve reads as a template error.
+    const seen: (string | null)[] = [];
+    let value = null as string | null;
+    for (let i = 0; i < 4; i += 1) {
+      value = stepAlign(value as never);
+      seen.push(value);
+    }
+
+    expect(seen).toEqual(['left', 'center', 'right', null]);
+  });
+
+  it('reads an unknown value back as the theme, never as an alignment', () => {
+    // A hand-edited file, or one from a later version: it must defer, not invent a ranging.
+    expect(normalizeAlign('justify')).toBeNull();
+    expect(normalizeAlign(undefined)).toBeNull();
+    expect(normalizeAlign('center')).toBe('center');
   });
 });

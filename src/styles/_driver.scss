@@ -1,0 +1,348 @@
+// The screen that asks who is driving.
+//
+// Sits on the connect screen's ground, so the launch reads as one sequence. Three rows like it:
+// the car on top, the question in the open space, the hint at the foot.
+
+.driver {
+  grid-template-rows: auto 1fr auto;
+
+  // Where the logo stands on the page before, at the same measure: the sequence must not shift
+  // under the eye from one page to the next.
+  &__car {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    width: 68%;
+    max-width: min(26rem, 42vh);
+    /*
+     * Lower than the logo's own box, not higher.
+     *
+     * The logo is a PNG with transparent margin baked in, so its artwork sits well inside the
+     * element that carries it. A frame aligned on that element therefore reads as sitting higher
+     * than the logo did; this gives back roughly what the file keeps for itself.
+     */
+    margin-top: 1.4rem;
+  }
+
+  // The frame is the control: a label wrapping a hidden input, so a tap anywhere inside opens the
+  // picker and a drop lands on the same target. `transfer__zone` carries the dashed edge and the
+  // hover behaviour, exactly as the profile panels use it.
+  //
+  // A fixed proportion, so the layout does not jump between a car with a photograph and one
+  // without. 3:2 because that is what a phone takes holding it the way one photographs a car.
+  &__frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    aspect-ratio: 3 / 2;
+    color: rgb(255 255 255 / 78%);
+    // On this ground the panel tokens would be invisible: the dashed edge takes the page's own ink.
+    border-color: rgb(255 255 255 / 34%);
+
+    .icon {
+      width: 1.7rem;
+      height: 1.7rem;
+    }
+
+    &:hover,
+    &:focus-within,
+    &.is-over {
+      border-color: rgb(255 255 255 / 78%);
+      background: rgb(255 255 255 / 10%);
+    }
+  }
+
+  // Filled, the frame stops inviting: the picture is the content, and the dashes would draw a box
+  // around it for nothing. It still takes a drop, which is how one picture replaces another.
+  &__frame.is-filled {
+    padding: 0;
+    overflow: hidden;
+    border-style: solid;
+    border-color: rgb(255 255 255 / 22%);
+    background: rgb(0 0 0 / 22%);
+  }
+
+  &__invite {
+    font-size: 0.82rem;
+  }
+
+  &__photo {
+    width: 100%;
+    height: 100%;
+    // The frame is fixed and the photograph is not: cropping keeps the car filling it rather than
+    // letterboxed, and the centre is where a car sits in a picture of a car.
+    object-fit: cover;
+    display: block;
+  }
+
+  &__drop {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 2.2rem;
+    height: 2.2rem;
+    display: grid;
+    place-items: center;
+    border: none;
+    border-radius: var(--r-sm);
+    background: rgb(0 0 0 / 52%);
+    color: #fff;
+    cursor: pointer;
+
+    .icon__cut {
+      fill: rgb(0 0 0 / 52%);
+    }
+  }
+
+  &__vehicle {
+    margin: 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 68%);
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    max-width: 26rem;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  // As many across as fit, never fewer than two: one per row would put the last name off screen on
+  // a phone as soon as a fourth driver exists.
+  &__people {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+    gap: 0.7rem;
+  }
+
+  &__person {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.9rem 0.6rem;
+    font: inherit;
+    color: inherit;
+    border: 1px solid rgb(255 255 255 / 26%);
+    border-radius: var(--r-md);
+    background: rgb(255 255 255 / 8%);
+    cursor: pointer;
+    // The hold is a press, not a text selection or a context menu.
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    user-select: none;
+    transition:
+      background 140ms,
+      scale 140ms;
+
+    &:hover {
+      background: rgb(255 255 255 / 14%);
+    }
+
+    // Held: it shrinks a little rather than pulsing. Something is happening, and the finger has
+    // not been ignored - which is all the feedback half a second can carry.
+    &.is-holding {
+      scale: 0.96;
+      background: rgb(255 255 255 / 18%);
+    }
+  }
+
+  &__face {
+    width: 2.6rem;
+    height: 2.6rem;
+    color: currentcolor;
+  }
+
+  &__name {
+    font-size: 0.92rem;
+    text-align: center;
+    // A long name wraps rather than widening its column and unbalancing the grid.
+    overflow-wrap: anywhere;
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: 0.76rem;
+    text-align: center;
+    color: rgb(255 255 255 / 62%);
+  }
+}
+
+// The faces, as a page of the same sequence rather than a window over it.
+//
+// One grid, no families and no headings: the point is to find one at a glance, and five labelled
+// bands are five things to read before looking.
+.faces {
+  // The head takes what it needs, the grid takes the rest. `align-content` is deliberately left
+  // alone: setting it to `start` would collapse the second row to its content and undo this.
+  grid-template-rows: auto 1fr;
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    margin-top: 0.6rem;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 600;
+    text-align: center;
+  }
+
+  &__who {
+    margin: 0;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgb(255 255 255 / 68%);
+  }
+
+  /*
+   * Five across and five down, spread over what the title leaves.
+   *
+   * A fixed count rather than `auto-fill`: twenty-five icons exist so that every row is full, and
+   * a column count that changed with the width would break that on the first screen size that
+   * disagreed.
+   *
+   * Cells stay square, and the gaps between rows stay bounded: sized to the height they became
+   * tall pills with a small icon adrift in each, and handed all the free room they drifted apart
+   * into five unrelated bands.
+   *
+   * What is left over goes above and below instead, which `align-content: center` does by
+   * splitting it evenly. The block is then as tall as it needs to be and sits in the middle of
+   * what the title leaves.
+   */
+  &__grid {
+    list-style: none;
+    margin: 0;
+    width: 100%;
+    max-width: 26rem;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    column-gap: 0.55rem;
+    row-gap: 0.8rem;
+    align-content: center;
+    // The floor for those outer margins, for a screen too short to leave any over.
+    padding: 0.7rem 0;
+  }
+
+  &__pick {
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 0.55rem;
+    color: rgb(255 255 255 / 88%);
+    border: 1px solid rgb(255 255 255 / 24%);
+    border-radius: var(--r-md);
+    background: rgb(255 255 255 / 8%);
+    cursor: pointer;
+    transition:
+      background 140ms,
+      scale 140ms;
+
+    &:hover {
+      background: rgb(255 255 255 / 16%);
+    }
+
+    &:active {
+      scale: 0.94;
+    }
+
+    // The one already worn. It is also the way out: choosing it changes nothing and returns, which
+    // is what a back button would have done with one more control on the page.
+    &.is-selected {
+      color: #fff;
+      border-color: rgb(255 255 255 / 85%);
+      background: rgb(255 255 255 / 22%);
+    }
+  }
+}
+
+// Who drives this car with which grid.
+//
+// A row that unfolds, like a trip: rarely wanted, and it would otherwise sit between the gauge
+// scales and the name field on every visit to the section.
+.grids {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+
+  &__toggle {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.55rem 0.7rem;
+    font: inherit;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    border: 1px solid var(--tile-border);
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--text-muted) 10%, transparent);
+    cursor: pointer;
+  }
+
+  &__count {
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.5rem 0.7rem;
+    border: 1px solid var(--ui-border);
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--ui-text) 4%, transparent);
+  }
+
+  // The driver's own, marked by an edge rather than by a word: the row already carries names, and
+  // a badge saying "yours" beside one's own name would say it twice.
+  &__item.is-mine {
+    border-color: color-mix(in srgb, var(--ui-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--ui-accent) 10%, transparent);
+  }
+
+  &__who {
+    font-size: 0.82rem;
+    overflow-wrap: anywhere;
+  }
+}

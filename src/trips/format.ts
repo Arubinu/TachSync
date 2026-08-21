@@ -46,3 +46,24 @@ export function tripFigures(trip: TripRecord): readonly string[] {
   if (trip.averagePer100km !== null) figures.push(`${trip.averagePer100km.toFixed(1)} L/100`);
   return figures;
 }
+
+/**
+ * A size, in the units the reader uses.
+ *
+ * `Intl` carries the abbreviations, so "ko" and "Mo" come out in French and "kB" and "MB" in
+ * English without seven more strings to keep in step - and without inventing a translation for a
+ * unit that already has an official one in every locale.
+ *
+ * Kilobytes up to a megabyte, then megabytes with one decimal: "1433 ko" says less at a glance
+ * than "1,4 Mo", and a tenth is all the precision a decision to delete needs.
+ */
+export function byteSize(bytes: number, language: LanguageCode): string {
+  const mega = bytes >= 1024 * 1024;
+  const value = mega ? bytes / 1024 / 1024 : bytes / 1024;
+
+  return new Intl.NumberFormat(language, {
+    style: 'unit',
+    unit: mega ? 'megabyte' : 'kilobyte',
+    maximumFractionDigits: mega ? 1 : 0,
+  }).format(value);
+}

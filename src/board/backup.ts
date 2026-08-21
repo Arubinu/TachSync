@@ -1,5 +1,7 @@
 import { readAvatarFile } from '../avatar/importAvatar';
 import { readWallpaperFile, type StoredWallpaper } from './wallpaper';
+import { isImage } from '../storage/image';
+import type { VehiclePhoto } from '../profiles/photo';
 import { en } from '../i18n/en';
 import { format, type Translation } from '../i18n';
 import type { ImportedAvatar } from '../avatar/store';
@@ -29,7 +31,7 @@ const TRIPS_ENTRY = 'trips.json';
 const SETTINGS_ENTRY = 'settings.json';
 const AVATARS_FOLDER = 'avatars/';
 const WALLPAPER_FOLDER = 'wallpaper/';
-const README_ENTRY = 'README.txt';
+const PHOTOS_FOLDER = 'photos/';
 
 /**
  * Entry names written by earlier versions, still accepted on read.
@@ -44,46 +46,15 @@ export function backupFileName(): string {
   return `tachsync-backup-${day}.${BACKUP_EXTENSION}`;
 }
 
-/**
- * Notice slipped into the archive.
- *
- * A backup resurfaces months later, on another device, with no application at hand to explain it.
- * It therefore documents itself: what it is for, what it holds, and how to read it without
- * installing anything - hence written in the language of whoever produced it.
- */
-function readme(
-  avatars: readonly ImportedAvatar[],
-  wallpaper: StoredWallpaper | null,
-  t: Translation,
-): string {
-  const list =
-    avatars.length === 0
-      ? t.settings.backupNoticeNoAvatars
-      : avatars.map((a) => `  ${AVATARS_FOLDER}${a.fileName}  —  ${a.label}`).join('\n');
-
-  return format(t.settings.backupNotice, {
-    // The notice names what the archive now holds, not the file it used to write.
-    settings: PROFILES_ENTRY,
-    avatars: AVATARS_FOLDER,
-    readme: README_ENTRY,
-    ext: BACKUP_EXTENSION,
-    list,
-    // The blank lines belong to the block, not to the template: with no image the notice has to
-    // read exactly as it did before any of this existed.
-    wallpaper: wallpaper === null ? '' : `\n\n${t.settings.backupNoticeWallpaper}`,
-  });
-}
-
 export async function createBackup(
   profiles: ProfileState,
   trips: readonly TripRecord[],
   avatars: readonly ImportedAvatar[],
   wallpaper: StoredWallpaper | null,
-  t: Translation,
+  photos: readonly VehiclePhoto[],
 ): Promise<Blob> {
   const encoder = new TextEncoder();
   const entries: ArchiveEntry[] = [
-    { name: README_ENTRY, data: encoder.encode(readme(avatars, wallpaper, t)) },
     // Everything the application keeps: every person, every vehicle, every look - not the active
     // one flattened. The earlier backup exported resolved settings, so restoring it rebuilt a
     // single set and quietly dropped the rest.
@@ -105,6 +76,20 @@ export async function createBackup(
     });
   }
 
+  /*
+   * One folder per car, named by its id.
+   *
+   * The id is the only thing that says which vehicle a picture belongs to, and a file name never
+   * did: two cars photographed from the same phone arrive as `IMG_0042.webp` twice. A folder
+   * carries it without constraining what the picture inside may be called.
+   */
+  for (const photo of photos) {
+    entries.push({
+      name: `${PHOTOS_FOLDER}${photo.id}/${photo.fileName}`,
+      data: new Uint8Array(await photo.data.arrayBuffer()),
+    });
+  }
+
   return createArchive(entries);
 }
 
@@ -118,6 +103,8 @@ export interface BackupImport {
   readonly avatars: readonly File[];
   /** The background image, if the archive carried one. */
   readonly wallpaper: File | null;
+  /** Vehicle photographs, each still paired with the id of the car it belongs to. */
+  readonly photos: readonly { readonly vehicleId: string; readonly file: File }[];
   readonly error: string | null;
 }
 
@@ -137,6 +124,7 @@ export async function readBackup(file: File, t: Translation): Promise<BackupImpo
       trips: [],
       avatars: [],
       wallpaper: null,
+      photos: [],
       error,
     };
   }
@@ -163,6 +151,16 @@ export async function readBackup(file: File, t: Translation): Promise<BackupImpo
       .map((entry) => new File([entry.data as BlobPart], entry.name.slice(WALLPAPER_FOLDER.length)))
       .find((candidate) => readWallpaperFile(candidate, en).wallpaper !== null) ?? null;
 
+  const photos = entries
+    .filter((entry) => entry.name.startsWith(PHOTOS_FOLDER) && entry.data.length > 0)
+    .flatMap((entry) => {
+      const [vehicleId, ...rest] = entry.name.slice(PHOTOS_FOLDER.length).split('/');
+      const name = rest.join('/');
+      if (vehicleId === undefined || vehicleId === '' || name === '') return [];
+      const file = new File([entry.data as BlobPart], name);
+      return isImage(file) ? [{ vehicleId, file }] : [];
+    });
+
   const trips = readTrips(entries, decoder);
 
   /*
@@ -176,7 +174,7 @@ export async function readBackup(file: File, t: Translation): Promise<BackupImpo
   if (collection !== undefined) {
     try {
       const profiles = JSON.parse(decoder.decode(collection.data)) as ProfileState;
-      return { profiles, settings: null, trips, avatars, wallpaper, error: null };
+      return { profiles, settings: null, trips, avatars, wallpaper, photos, error: null };
     } catch {
       return {
         profiles: null,
@@ -184,6 +182,7 @@ export async function readBackup(file: File, t: Translation): Promise<BackupImpo
         trips: [],
         avatars: [],
         wallpaper: null,
+        photos: [],
         error: t.errors.invalidJson,
       };
     }
@@ -199,6 +198,7 @@ export async function readBackup(file: File, t: Translation): Promise<BackupImpo
       trips: [],
       avatars: [],
       wallpaper: null,
+      photos: [],
       error: format(t.errors.incompleteArchive, { name: PROFILES_ENTRY }),
     };
   }
@@ -211,11 +211,12 @@ export async function readBackup(file: File, t: Translation): Promise<BackupImpo
       trips: [],
       avatars: [],
       wallpaper: null,
+      photos: [],
       error: result.error,
     };
   }
 
-  return { profiles: null, settings: result.settings, trips, avatars, wallpaper, error: null };
+  return { profiles: null, settings: result.settings, trips, avatars, wallpaper, photos, error: null };
 }
 
 export function downloadBackup(blob: Blob, name: string): void {

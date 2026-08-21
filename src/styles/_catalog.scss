@@ -161,20 +161,8 @@
     // The margin governs the gap with neighbours; alone in a thumbnail it would
     // only eat into the preview.
     margin: 0;
-    // An 80 px tile cannot carry a full-screen tile's margin: at 15 px top and bottom, almost half
-    // the thumbnail disappeared before showing anything. Content shrinking is handled by container
-    // query in `_tiles`, but the margin must come from here - a container cannot resize itself from
-    // its own size.
-    --tile-padding: 0.45rem;
-  }
-
-  &__glyph {
-    display: grid;
-    place-items: center;
-    font-size: 2.2rem;
-    color: var(--accent);
-    border: 1px dashed var(--tile-border);
-    border-radius: var(--tile-radius);
+    // The padding a thumbnail needs is not set here. The theme reaches the tile as an inline
+    // style, which beats any class, so `--tile-padding` is set beside it in `TileCatalog`.
   }
 
   &__label {

@@ -3,7 +3,7 @@ import { EMPTY_FRAME } from '../telemetry/types';
 import type { TelemetrySnapshot } from '../telemetry/TelemetryStore';
 import { MIN_DISTANCE_KM, MIN_DURATION_S, TripRecorder } from './recorder';
 
-const CONTEXT = { vehicle: 'Golf GTI', source: 'simulated' } as const;
+const CONTEXT = { vehicleId: 'v1', vehicle: 'Golf GTI', source: 'simulated' } as const;
 
 /** Minimal snapshot: what the store would deliver after a few frames. */
 function snapshot(options: {
@@ -101,7 +101,7 @@ describe('TripRecorder', () => {
   });
 
   it('keeps the context and the bounds of the trip', () => {
-    const recorder = new TripRecorder({ vehicle: 'Clio', source: 'obd' }, 1_700_000_000_000);
+    const recorder = new TripRecorder({ vehicleId: 'v2', vehicle: 'Clio', source: 'obd' }, 1_700_000_000_000);
     recorder.observe(snapshot({ durationS: 1234.6 }));
 
     const trip = recorder.record(1_700_000_600_000);

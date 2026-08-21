@@ -4,6 +4,13 @@ export const pt: Translation = {
   languageName: 'Português',
   roadRules: 'Na via pública o código da estrada vem primeiro. Esta aplicação não justifica qualquer infração, e nenhum passo da calibração a exige.',
 
+  driver: {
+    title: 'Quem conduz?',
+    hold: 'Mantém premido um nome para mudar o seu ícone.',
+    addPhoto: 'Adicionar uma foto',
+    removePhoto: 'Remover a foto',
+    chooseIcon: 'Escolher um ícone',
+  },
   terms: {
     title: 'Antes de conduzir',
     lead: 'Esta aplicação mostra. Não conduz.',
@@ -73,10 +80,14 @@ export const pt: Translation = {
     profileName: 'Renomear',
     vehicleDetected: 'Novo veículo detetado',
     nameHint: 'Toque para lhe dar um nome, ou faça-o mais tarde nas definições de perfis.',
+    grids: 'Grelhas',
+    gridCount: '{count} grelha(s)',
+    joinGrid: 'Juntar-se',
+    splitGrid: 'Usar a minha',
+    gridEmpty: 'Ainda ninguém',
     topSpeed: 'Velocidade máx.',
     redline: 'Corte',
     duplicate: 'Duplicar',
-    newProfile: 'Novo',
     appearance: 'Aspeto',
     background: 'Fundo',
     avatar: 'Avatar',
@@ -107,47 +118,7 @@ export const pt: Translation = {
     export: 'Exportar',
     import: 'Importar',
     remove: 'Retirar',
-    backupHint:
-      'Definições e avatares num único ficheiro .{ext}. Tudo vive neste navegador; importar substitui tudo.',
     backupWarning: 'Ao importar, tudo é reposto!',
-    backupNotice: `CÓPIA DE SEGURANÇA TACHSYNC
-===========================
-
-Este ficheiro é um ARQUIVO ZIP comum, com uma extensão própria da
-aplicação. Para o abrir com a ferramenta do teu sistema, muda-lhe o nome
-para .zip — não é preciso mais nada.
-
-CONTEÚDO
---------
-
-  {settings}
-      As tuas definições, em JSON indentado: disposição dos mosaicos por
-      orientação, mosaicos e fundos importados, avatar escolhido, escala
-      do texto. Legível e editável em qualquer editor de texto.
-
-  {avatars}
-      Os ficheiros de avatar que tinhas importado, tal como estão (.riv,
-      .glb ou .gltf). Não cabem no ficheiro de definições: são binários
-      de vários megabytes.
-
-{list}{wallpaper}
-
-  {readme}
-      Este aviso.
-
-RESTAURAR
----------
-
-Definições -> Cópia de segurança -> Importar, e escolhe este ficheiro.
-As definições e os avatares são restaurados em conjunto.
-
-A importação SUBSTITUI toda a configuração existente.
-
-Só são aceites ficheiros .{ext}. Se só tiveres um antigo {settings}
-isolado, coloca-o num arquivo zip com esse nome exato, muda o nome do
-arquivo para .{ext}, e será lido normalmente.
-`,
-    backupNoticeNoAvatars: '  (nenhum avatar importado no momento da cópia)',
     backupSaved: 'Cópia guardada.',
     backupSavedWithAvatars: 'Cópia guardada, com {count} avatar(es).',
     settingsRestored: 'Definições restauradas.',
@@ -157,10 +128,14 @@ arquivo para .{ext}, e será lido normalmente.
     importBackground: 'Importar uma imagem',
     removeBackground: 'Remover a imagem',
     importedImage: 'Imagem importada',
-    backupNoticeWallpaper: '  wallpaper/\n      A imagem de fundo que tinha importado, tal como está.',
     defaultBackground: 'Predefinido',
     noTheme: 'Sem tema',
     previousAvatar: 'Avatar anterior',
+    hideObjects: 'Ocultar um objeto',
+    hideObjectsHint: 'Toca num objeto para o ocultar. Toca de novo no botão para sair.',
+    hideObjectsUnsupported: 'Este avatar não expõe os seus objetos um a um.',
+    hideObjectsLastOne: 'Tem de ficar visível pelo menos um objeto.',
+    showAllObjects: 'Mostrar tudo de novo',
     nextAvatar: 'Avatar seguinte',
     close: 'Fechar',
   },
@@ -182,14 +157,14 @@ arquivo para .{ext}, e será lido normalmente.
   },
 
   editor: {
-    layout: 'Disposição',
+    layout: 'Redimensionar',
+    tabSize: 'Tamanho',
+    tabOptions: 'Opções',
     noRoom: 'Sem espaço: outro mosaico ocupa o lugar.',
     boardFull: 'Sem espaço: o painel está demasiado ocupado.',
     holdForSettings: 'Mantém premido para abrir as definições.',
     scale: 'Escala',
     layer: 'Camada',
-    orientation: 'Orientação',
-    normal: 'Normal',
     mirrored: 'Espelhado',
     whenMissing: 'Se o valor faltar',
     missingOnVehicle: 'Este valor não existe no veículo ligado.',
@@ -206,6 +181,10 @@ arquivo para .{ext}, e será lido normalmente.
     tile: 'Mosaico',
     spacing: 'Espaçamento',
     spacingAuto: 'Tema',
+    align: 'Alinhamento',
+    alignLeft: 'Esquerda',
+    alignCenter: 'Centrado',
+    alignRight: 'Direita',
     dressing: 'Acabamento',
     caption: 'Legenda',
     captions: {
@@ -239,11 +218,8 @@ arquivo para .{ext}, e será lido normalmente.
     exitEditMode: 'Sair do modo de edição',
     back: 'Voltar ao menu anterior',
     columns: 'Colunas',
-    columnsShort: 'Col.',
     rows: 'Linhas',
-    rowsShort: 'Lin.',
     add: 'aumentar',
-    subtract: 'reduzir',
     activeLayer: 'Camada ativa: {layer}. Passar à seguinte',
   },
 
@@ -268,6 +244,7 @@ arquivo para .{ext}, e será lido normalmente.
   },
 
   metrics: {
+    peak: 'máx.',
     speed: 'Velocidade',
     rpm: 'Rotações',
     gear: 'Mudança',
@@ -374,7 +351,6 @@ arquivo para .{ext}, e será lido normalmente.
     notAnImage: 'Este ficheiro não é uma imagem!',
     imageTooLarge: 'Imagem demasiado pesada: {size} MB (máx. 16).',
     noTilesFound: 'Nenhum mosaico nem fundo encontrado neste ficheiro.',
-    storageUnavailable: 'Armazenamento indisponível.',
     notAnEntity: 'Este ficheiro não vem do TachSync.',
     wrongEntityKind: 'Este ficheiro não contém {kind}.',
     unreadableAvatarFile: 'Não foi possível ler o ficheiro do avatar.',

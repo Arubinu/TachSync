@@ -63,8 +63,11 @@ export function recognizeVehicle(
         adapterId,
         calibration: null,
         // A new car starts from a fresh grid: reusing another's would place tiles composed for a
-        // dashboard that is not its own.
-        layouts: { portrait: DEFAULT_PORTRAIT_LAYOUT, landscape: DEFAULT_LAYOUT },
+        // dashboard that is not its own. Nobody is placed on it - the first grid is what a driver
+        // gets until they are put somewhere else.
+        layouts: [
+          { id: 'grid-1', people: [], portrait: DEFAULT_PORTRAIT_LAYOUT, landscape: DEFAULT_LAYOUT },
+        ],
         ranges: DEFAULT_RANGES,
       },
     ],

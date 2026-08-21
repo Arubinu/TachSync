@@ -24,12 +24,7 @@ export interface ModalProps {
    * unpredictable.
    */
   readonly leading?: ReactNode;
-  /**
-   * Extra controls, immediately after back.
-   *
-   * A ghost of the same width is added opposite each one, so the title keeps the middle: a header
-   * that re-centres itself whenever a screen offers an extra action reads as unstable.
-   */
+  /** Extra controls, immediately after back. */
   readonly actions?: readonly ReactNode[];
   /**
    * Controls at the other end, just before the close cross.
@@ -37,8 +32,8 @@ export interface ModalProps {
    * Separate from `actions` because the side carries meaning: what sits by the cross acts on the
    * window one is leaving, what sits by back belongs to the level one is in.
    *
-   * No ghost opposite, unlike `actions`: this control is already on the right, where it counts
-   * against the left. Balancing it too pushed the title 24 px off centre - measured.
+   * Neither side has to be balanced against the other any more: the header is three columns with
+   * equal outer tracks, so the title is centred whatever each side carries.
    */
   readonly trailing?: readonly ReactNode[];
   readonly children: ReactNode;
@@ -193,54 +188,50 @@ export function Modal({
         onPointerDown={(event) => event.stopPropagation()}
       >
         <header className="modal__header">
-          {onBack !== undefined ? (
-            <button
-              type="button"
-              className="modal__action"
-              onClick={onBack}
-              aria-label={t.editBar.back}
-            >
-              <BackIcon />
-            </button>
-          ) : leading !== undefined ? (
-            <span className="modal__leading">{leading}</span>
-          ) : onDelete === undefined ? (
-            <span className="modal__action modal__action--ghost" aria-hidden />
-          ) : (
-            <button
-              type="button"
-              className="modal__action modal__action--danger"
-              onClick={onDelete}
-              aria-label={t.editor.delete}
-            >
-              <TrashIcon />
-            </button>
-          )}
+          <span className="modal__side">
+            {onBack !== undefined ? (
+              <button
+                type="button"
+                className="modal__action"
+                onClick={onBack}
+                aria-label={t.editBar.back}
+              >
+                <BackIcon />
+              </button>
+            ) : leading !== undefined ? (
+              leading
+            ) : onDelete === undefined ? null : (
+              <button
+                type="button"
+                className="modal__action modal__action--danger"
+                onClick={onDelete}
+                aria-label={t.editor.delete}
+              >
+                <TrashIcon />
+              </button>
+            )}
 
-          {/* Both buttons having the same width, the title centres itself. */}
-          {actions?.map((control, index) => (
-            <Fragment key={index}>{control}</Fragment>
-          ))}
+            {actions?.map((control, index) => (
+              <Fragment key={index}>{control}</Fragment>
+            ))}
+          </span>
 
           <h2 className="modal__title">{title}</h2>
 
-          {/* One ghost per action, so the title keeps the middle whatever a screen offers. */}
-          {actions?.map((_unused, index) => (
-            <span key={index} className="modal__action modal__action--ghost" aria-hidden />
-          ))}
+          <span className="modal__side modal__side--end">
+            {trailing?.map((control, index) => (
+              <Fragment key={index}>{control}</Fragment>
+            ))}
 
-          {trailing?.map((control, index) => (
-            <Fragment key={index}>{control}</Fragment>
-          ))}
-
-          <button
-            type="button"
-            className="modal__action"
-            onClick={requestClose}
-            aria-label={t.editor.close}
-          >
-            <CloseIcon />
-          </button>
+            <button
+              type="button"
+              className="modal__action"
+              onClick={requestClose}
+              aria-label={t.editor.close}
+            >
+              <CloseIcon />
+            </button>
+          </span>
         </header>
 
         <div className="modal__body">{children}</div>

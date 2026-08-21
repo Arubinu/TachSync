@@ -4,6 +4,13 @@ export const nl: Translation = {
   languageName: 'Nederlands',
   roadRules: 'Op de openbare weg geldt de wegcode voor alles. Deze applicatie rechtvaardigt geen enkele overtreding, en geen enkele stap van de kalibratie vraagt erom.',
 
+  driver: {
+    title: 'Wie rijdt er?',
+    hold: 'Houd een naam ingedrukt om het pictogram te wijzigen.',
+    addPhoto: 'Foto toevoegen',
+    removePhoto: 'Foto verwijderen',
+    chooseIcon: 'Kies een pictogram',
+  },
   terms: {
     title: 'Voor je gaat rijden',
     lead: 'Deze applicatie toont. Ze rijdt niet.',
@@ -73,10 +80,14 @@ export const nl: Translation = {
     profileName: 'Hernoemen',
     vehicleDetected: 'Nieuw voertuig gevonden',
     nameHint: 'Tik om het een naam te geven, of doe het later bij de profielinstellingen.',
+    grids: 'Rasters',
+    gridCount: '{count} raster(s)',
+    joinGrid: 'Deelnemen',
+    splitGrid: 'Mijn eigen gebruiken',
+    gridEmpty: 'Nog niemand',
     topSpeed: 'Topsnelheid',
     redline: 'Toerenbegrenzer',
     duplicate: 'Dupliceren',
-    newProfile: 'Nieuw',
     appearance: 'Weergave',
     background: 'Achtergrond',
     avatar: 'Avatar',
@@ -107,47 +118,7 @@ export const nl: Translation = {
     export: 'Exporteren',
     import: 'Importeren',
     remove: 'Weghalen',
-    backupHint:
-      'Instellingen en avatars in één .{ext}-bestand. Alles staat in deze browser; importeren vervangt alles.',
     backupWarning: 'Bij importeren wordt alles gewist!',
-    backupNotice: `TACHSYNC-BACK-UP
-================
-
-Dit bestand is een gewoon ZIP-ARCHIEF met een eigen extensie van de
-applicatie. Om het met het hulpmiddel van je systeem te openen, hernoem
-het naar .zip — meer is niet nodig.
-
-INHOUD
-------
-
-  {settings}
-      Je instellingen, als ingesprongen JSON: tegelindeling per
-      oriëntatie, geïmporteerde tegels en achtergronden, gekozen avatar,
-      tekstschaal. Leesbaar en aanpasbaar in elke teksteditor.
-
-  {avatars}
-      De avatarbestanden die je had geïmporteerd, ongewijzigd (.riv,
-      .glb of .gltf). Ze passen niet in het instellingenbestand: het
-      zijn binaire bestanden van meerdere megabytes.
-
-{list}{wallpaper}
-
-  {readme}
-      Deze toelichting.
-
-HERSTELLEN
-----------
-
-Instellingen -> Back-up -> Importeren, en kies dit bestand. Instellingen
-en avatars worden samen hersteld.
-
-Importeren VERVANGT de volledige bestaande configuratie.
-
-Alleen .{ext}-bestanden worden aanvaard. Heb je enkel een oude losse
-{settings}, plaats die dan onder precies die naam in een zip-archief,
-hernoem het archief naar .{ext}, en het wordt gewoon gelezen.
-`,
-    backupNoticeNoAvatars: '  (geen avatar geïmporteerd op het moment van de back-up)',
     backupSaved: 'Reservekopie opgeslagen.',
     backupSavedWithAvatars: 'Reservekopie opgeslagen, met {count} avatar(s).',
     settingsRestored: 'Instellingen hersteld.',
@@ -157,10 +128,14 @@ hernoem het archief naar .{ext}, en het wordt gewoon gelezen.
     importBackground: 'Afbeelding importeren',
     removeBackground: 'Afbeelding verwijderen',
     importedImage: 'Geïmporteerde afbeelding',
-    backupNoticeWallpaper: '  wallpaper/\n      De achtergrondafbeelding die u had geïmporteerd, ongewijzigd.',
     defaultBackground: 'Standaard',
     noTheme: 'Zonder thema',
     previousAvatar: 'Vorige avatar',
+    hideObjects: 'Een object verbergen',
+    hideObjectsHint: 'Tik een object aan om het te verbergen. Tik nogmaals op de knop om te stoppen.',
+    hideObjectsUnsupported: 'Deze avatar geeft zijn objecten niet stuk voor stuk prijs.',
+    hideObjectsLastOne: 'Er moet minstens één object zichtbaar blijven.',
+    showAllObjects: 'Alles weer tonen',
     nextAvatar: 'Volgende avatar',
     close: 'Sluiten',
   },
@@ -182,14 +157,14 @@ hernoem het archief naar .{ext}, en het wordt gewoon gelezen.
   },
 
   editor: {
-    layout: 'Indeling',
+    layout: 'Formaat wijzigen',
+    tabSize: 'Formaat',
+    tabOptions: 'Opties',
     noRoom: 'Geen ruimte: een andere tegel staat in de weg.',
     boardFull: 'Geen ruimte: het dashboard is te vol.',
     holdForSettings: 'Houd ingedrukt om de instellingen te openen.',
     scale: 'Schaal',
     layer: 'Laag',
-    orientation: 'Oriëntatie',
-    normal: 'Normaal',
     mirrored: 'Gespiegeld',
     whenMissing: 'Als de waarde ontbreekt',
     missingOnVehicle: 'Deze waarde bestaat niet op het verbonden voertuig.',
@@ -206,6 +181,10 @@ hernoem het archief naar .{ext}, en het wordt gewoon gelezen.
     tile: 'Tegel',
     spacing: 'Ruimte',
     spacingAuto: 'Thema',
+    align: 'Uitlijning',
+    alignLeft: 'Links',
+    alignCenter: 'Gecentreerd',
+    alignRight: 'Rechts',
     dressing: 'Opmaak',
     caption: 'Bijschrift',
     captions: {
@@ -239,11 +218,8 @@ hernoem het archief naar .{ext}, en het wordt gewoon gelezen.
     exitEditMode: 'Bewerkmodus verlaten',
     back: 'Terug naar het vorige menu',
     columns: 'Kolommen',
-    columnsShort: 'Kol.',
     rows: 'Rijen',
-    rowsShort: 'Rij.',
     add: 'verhogen',
-    subtract: 'verlagen',
     activeLayer: 'Actieve laag: {layer}. Naar de volgende',
   },
 
@@ -268,6 +244,7 @@ hernoem het archief naar .{ext}, en het wordt gewoon gelezen.
   },
 
   metrics: {
+    peak: 'max.',
     speed: 'Snelheid',
     rpm: 'Toerental',
     gear: 'Versnelling',
@@ -374,7 +351,6 @@ hernoem het archief naar .{ext}, en het wordt gewoon gelezen.
     notAnImage: 'Dit bestand is geen afbeelding!',
     imageTooLarge: 'Afbeelding te groot: {size} MB (max. 16).',
     noTilesFound: 'Geen tegel of achtergrond in dit bestand gevonden.',
-    storageUnavailable: 'Opslag niet beschikbaar.',
     notAnEntity: 'Dit bestand komt niet uit TachSync.',
     wrongEntityKind: 'Dit bestand bevat geen {kind}.',
     unreadableAvatarFile: 'Het avatarbestand kon niet worden gelezen.',

@@ -8,8 +8,15 @@ import {
   hasMagic,
   normalizeNodeName,
 } from '../assets';
+import { meshPicking } from '../pickMesh';
 import { AvatarError } from '../types';
-import type { AvatarFrameState, AvatarInstance, AvatarMood, AvatarPalette } from '../types';
+import type {
+  AvatarFrameState,
+  AvatarInstance,
+  AvatarMood,
+  AvatarPalette,
+  AvatarPicking,
+} from '../types';
 
 /**
  * Character loaded from a glTF file.
@@ -52,6 +59,8 @@ class GltfCompanion implements AvatarInstance {
   #canvas: HTMLCanvasElement;
   #root: THREE.Object3D;
   #mixer: THREE.AnimationMixer | null = null;
+
+  readonly picking: AvatarPicking;
 
   #nodes = new Map<NodeKey, THREE.Object3D>();
   /** Reference poses: every animation is relative to the original pose. */
@@ -112,6 +121,9 @@ class GltfCompanion implements AvatarInstance {
     this.#collectNodes(this.#root);
     this.#frameModel();
     this.#scene.add(this.#root);
+    // An imported model names its own pieces; picking leans on those names rather than inventing
+    // any, which is what lets a hidden piece stay hidden across restarts.
+    this.picking = meshPicking(this.#canvas, this.#camera, this.#root);
 
     const idle = gltf.animations.find(
       (clip) => normalizeNodeName(clip.name) === GLTF_IDLE_CLIP,

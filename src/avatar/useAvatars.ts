@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { format, type Translation } from '../i18n';
 import { readAvatarFile } from './importAvatar';
+import { useTipMessage } from '../board/Tip';
 import { getAvatars, setImportedAvatars, subscribeAvatars } from './registry';
 import { deleteAvatar, listAvatars, saveAvatar, type ImportedAvatar } from './store';
 import type { AvatarDefinition } from './types';
 
 export interface AvatarLibrary {
   readonly avatars: readonly AvatarDefinition[];
+  /** Why an import was refused, or what it brought in. Withdrawn on its own, like every answer. */
   readonly report: string | null;
+  /** Changes on every answer, so the same words twice show twice. */
+  readonly reportId: number;
   importFile(file: File): Promise<void>;
   remove(id: string): Promise<void>;
   /** The raw records, for slipping into a backup. */
@@ -26,7 +30,7 @@ export interface AvatarLibrary {
  */
 export function useAvatars(t: Translation): AvatarLibrary {
   const [avatars, setAvatars] = useState<readonly AvatarDefinition[]>(getAvatars);
-  const [report, setReport] = useState<string | null>(null);
+  const { text: report, id: reportId, say: setReport } = useTipMessage();
 
   useEffect(() => {
     const unsubscribe = subscribeAvatars(() => setAvatars(getAvatars()));
@@ -63,5 +67,5 @@ export function useAvatars(t: Translation): AvatarLibrary {
 
   const records = useCallback((): Promise<readonly ImportedAvatar[]> => listAvatars(), []);
 
-  return { avatars, report, importFile, remove, records };
+  return { avatars, report, reportId, importFile, remove, records };
 }

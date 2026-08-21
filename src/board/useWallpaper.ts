@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { TIP_MS } from './Tip';
+import { useTipMessage } from './Tip';
 import type { Translation } from '../i18n';
 import {
   deleteWallpaper,
@@ -41,20 +41,7 @@ export interface WallpaperLibrary {
 export function useWallpaper(t: Translation): WallpaperLibrary {
   const [wallpaper, setWallpaper] = useState<StoredWallpaper | null>(null);
   const [url, setUrl] = useState<string | null>(null);
-  const [report, setReport] = useState<string | null>(null);
-  const [reportId, setReportId] = useState(0);
-
-  /** Says it once, then withdraws it: the bubble is transient by nature. */
-  const answer = useCallback((message: string | null): void => {
-    setReport(message);
-    setReportId((count) => count + 1);
-  }, []);
-
-  useEffect(() => {
-    if (report === null) return;
-    const timer = window.setTimeout(() => setReport(null), TIP_MS);
-    return () => window.clearTimeout(timer);
-  }, [report, reportId]);
+  const { text: report, id: reportId, say: answer } = useTipMessage();
 
   useEffect(() => {
     void readWallpaper().then(setWallpaper);

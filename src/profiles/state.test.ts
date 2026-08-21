@@ -10,7 +10,7 @@ function twoPeople(): ProfileState {
     ...base,
     people: [
       ...base.people,
-      { id: 'person-2', label: 'Alex', appearanceId: FIRST_APPEARANCE },
+      { id: 'person-2', label: 'Alex', appearanceId: FIRST_APPEARANCE, icon: 'chat' },
     ],
     vehicles: [
       ...base.vehicles,
@@ -50,10 +50,10 @@ describe('applySettings', () => {
       layouts: { portrait: grid, landscape: grid },
     });
 
-    expect(next.vehicles[0]!.layouts.portrait.columns).toBe(9);
+    expect(next.vehicles[0]!.layouts[0]!.portrait.columns).toBe(9);
     // The second car keeps its own: a layout belongs to the car it was composed for.
-    expect(next.vehicles[1]!.layouts.portrait.columns).toBe(
-      state.vehicles[1]!.layouts.portrait.columns,
+    expect(next.vehicles[1]!.layouts[0]!.portrait.columns).toBe(
+      state.vehicles[1]!.layouts[0]!.portrait.columns,
     );
   });
 
@@ -104,11 +104,21 @@ describe('readProfileState', () => {
     expect(readProfileState({ people: 'oui' }, DEFAULT_SETTINGS).people).toHaveLength(1);
   });
 
+  it('gives an appearance stored before objects could be hidden an empty map', () => {
+    // Not cosmetic: the settings panel indexes this map by avatar id as it renders, so an
+    // appearance without it threw before the window could open.
+    const base = toProfileState(DEFAULT_SETTINGS);
+    const { hiddenAvatarParts: _absent, ...older } = base.appearances[0]!;
+
+    const state = readProfileState({ ...base, appearances: [older] }, DEFAULT_SETTINGS);
+    expect(activeAppearance(state).hiddenAvatarParts).toEqual({});
+  });
+
   it('repairs an inherited layout where two tiles overlap', () => {
     // Layouts live inside the vehicle: they escape the flat-settings normaliser and
     // must therefore be re-read here.
     const base = toProfileState(DEFAULT_SETTINGS);
-    const firstTile = base.vehicles[0]!.layouts.landscape.tiles[0]!;
+    const firstTile = base.vehicles[0]!.layouts[0]!.landscape.tiles[0]!;
     const twin = { ...firstTile, id: 'copy' };
 
     const damaged = {
@@ -116,18 +126,21 @@ describe('readProfileState', () => {
       vehicles: [
         {
           ...base.vehicles[0]!,
-          layouts: {
-            ...base.vehicles[0]!.layouts,
-            landscape: {
-              ...base.vehicles[0]!.layouts.landscape,
-              tiles: [firstTile, twin],
+          layouts: [
+            {
+              ...base.vehicles[0]!.layouts[0]!,
+              landscape: {
+                ...base.vehicles[0]!.layouts[0]!.landscape,
+                tiles: [firstTile, twin],
+              },
             },
-          },
+          ],
         },
       ],
     };
 
-    const tiles = readProfileState(damaged, DEFAULT_SETTINGS).vehicles[0]!.layouts.landscape.tiles;
+    const tiles =
+      readProfileState(damaged, DEFAULT_SETTINGS).vehicles[0]!.layouts[0]!.landscape.tiles;
     const [a, b] = tiles;
 
     expect(tiles).toHaveLength(2);

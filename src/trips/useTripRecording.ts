@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { TelemetryStore } from '../telemetry/TelemetryStore';
 import { TripRecorder } from './recorder';
 import { saveTrip } from './store';
+import { saveTrace } from './trace';
 import type { TripRecord } from './types';
 
 /**
@@ -35,6 +36,8 @@ export interface TripRecordingOptions {
   readonly store: TelemetryStore;
   /** `null` until a source is chosen: there is nothing to record before that. */
   readonly source: TripRecord['source'] | null;
+  /** Identifies the car; the label below only says how it read at the time. */
+  readonly vehicleId: string;
   readonly vehicle: string;
   /** Needed by the style engine: the same revs mean different things on different engines. */
   readonly redline: number;
@@ -55,6 +58,7 @@ export interface TripRecordingOptions {
 export function useTripRecording({
   store,
   source,
+  vehicleId,
   vehicle,
   redline,
   onSaved,
@@ -63,8 +67,8 @@ export function useTripRecording({
   // Read when the trip opens but deliberately not dependencies: including them would open a new
   // trip on every vehicle change, and the second would recount the first one's distance since the
   // store totals do not reset.
-  const latest = useRef({ vehicle, redline, onSaved });
-  latest.current = { vehicle, redline, onSaved };
+  const latest = useRef({ vehicleId, vehicle, redline, onSaved });
+  latest.current = { vehicleId, vehicle, redline, onSaved };
 
   /** Writes the current state without closing anything. */
   const write = useCallback((then?: () => void) => {
@@ -78,6 +82,15 @@ export function useTripRecording({
       // Quota, private browsing: the trip is lost but the drive goes on.
       () => undefined,
     );
+
+    /*
+     * The trace follows the summary, and never the other way round.
+     *
+     * Written after, and its failure swallowed on its own: a trace is a nicety, a trip is the
+     * record. Losing the curve because storage was tight must not cost the drive itself.
+     */
+    const trace = recorder.current?.trace() ?? null;
+    if (trace !== null) void saveTrace(trace).catch(() => undefined);
   }, []);
 
   const close = useCallback(() => {
@@ -89,7 +102,10 @@ export function useTripRecording({
   useEffect(() => {
     if (source === null) return;
 
-    recorder.current = new TripRecorder({ vehicle: latest.current.vehicle, source }, Date.now());
+    recorder.current = new TripRecorder(
+      { vehicleId: latest.current.vehicleId, vehicle: latest.current.vehicle, source },
+      Date.now(),
+    );
     // The two sources complement each other without interfering: the accumulator only keeps maxima
     // and the last state seen, so sampling twice is the same as sampling once.
     const unsubscribe = store.subscribe((snapshot) => recorder.current?.observe(snapshot));
@@ -98,6 +114,8 @@ export function useTripRecording({
       // Only here, and never from the subscription: the style engine integrates over time, so it
       // needs one feed per interval, not one per frame.
       recorder.current?.observeStyle(store.current, SAMPLE_MS / 1000, latest.current.redline);
+      // Same beat, same reason - and one reading per second is all a curve on a phone can show.
+      recorder.current?.sample(store.current);
     }, SAMPLE_MS);
     const timer = window.setInterval(() => write(), CHECKPOINT_MS);
     // Last chance when the page leaves cleanly. No guarantee - hence the checkpoints - but it costs
@@ -122,9 +140,9 @@ export function useTripRecording({
    */
   const restart = useCallback(() => {
     if (recorder.current === null || source === null) return;
-    const { vehicle: label } = latest.current;
+    const { vehicleId, vehicle: label } = latest.current;
     close();
-    recorder.current = new TripRecorder({ vehicle: label, source }, Date.now());
+    recorder.current = new TripRecorder({ vehicleId, vehicle: label, source }, Date.now());
   }, [close, source]);
 
   return { restart };

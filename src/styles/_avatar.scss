@@ -11,6 +11,16 @@
   // The character never catches the finger; the tile handles the gesture.
   pointer-events: none;
 
+  // Picking an object to hide: the one moment the character IS the target. The cursor carries it,
+  // and the bubble says what to do - the frame is left alone, the avatar being what one is looking
+  // at.
+  &.is-picking {
+    pointer-events: auto;
+    cursor: crosshair;
+    // Touch here means aiming, never scrolling the panel underneath.
+    touch-action: none;
+  }
+
   &__mount {
     position: absolute;
     inset: 0;

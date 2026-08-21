@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 /**
  * The transient tooltip, the same everywhere.
@@ -18,6 +18,45 @@ import { useEffect } from 'react';
  * moving car, short enough not to sit over the screen it is commenting on.
  */
 export const TIP_MS = 3200;
+
+export interface TipMessage {
+  /** What to say, or `null` while there is nothing to answer. */
+  readonly text: string | null;
+  /**
+   * Changes on every answer.
+   *
+   * Twice the same words is twice the same string, which React would leave mounted and motionless:
+   * the second attempt would look unread. Used as the bubble's `key`, it makes a new one.
+   */
+  readonly id: number;
+  /** Says something, or withdraws whatever stands. */
+  readonly say: (text: string | null) => void;
+}
+
+/**
+ * Holds what the bubble is saying, and takes it back on its own.
+ *
+ * The counter and the timer travel together because they answer the same question - how long this
+ * answer lives, and when it counts as a new one. Written out at each call site they drifted: the
+ * hint bubble sat forever until a refusal counter elsewhere was noticed to have a timer.
+ */
+export function useTipMessage(): TipMessage {
+  const [text, setText] = useState<string | null>(null);
+  const [id, setId] = useState(0);
+
+  const say = useCallback((message: string | null): void => {
+    setText(message);
+    setId((count) => count + 1);
+  }, []);
+
+  useEffect(() => {
+    if (text === null) return;
+    const timer = window.setTimeout(() => setText(null), TIP_MS);
+    return () => window.clearTimeout(timer);
+  }, [text, id]);
+
+  return { text, id, say };
+}
 
 export function Tip({
   main,

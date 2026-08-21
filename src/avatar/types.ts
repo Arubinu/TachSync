@@ -71,6 +71,36 @@ export interface AvatarPalette {
 }
 
 /**
+ * Naming and hiding the objects an avatar is made of.
+ *
+ * Optional, because it cannot be honoured by every technique. A drawing held as a tree of shapes -
+ * SVG, or a scene of meshes - can say what sits under a point and leave it out of the next frame. A
+ * Rive document cannot: its runtime exposes a state machine and data bindings, never its shapes, so
+ * an object there is reachable only if the author published an input for it.
+ *
+ * Absent rather than throwing, so the interface can be asked whether it exists and the button that
+ * needs it can be disabled with a reason instead of failing under the finger.
+ */
+export interface AvatarPicking {
+  /**
+   * Id of the object drawn at this point, or `null` for bare background.
+   *
+   * Coordinates are pixels within the mounted element, top-left origin - what a pointer event
+   * gives once the element's own box is subtracted.
+   */
+  pick(x: number, y: number): string | null;
+  /** The objects to leave out of the drawing. Replaces the whole set, so it can be undone. */
+  setHidden(ids: ReadonlySet<string>): void;
+  /**
+   * Every object that can be hidden, whether it currently is or not.
+   *
+   * Reported so the caller can tell when a hide would leave nothing to draw. `pick` alone cannot
+   * answer that: it says what is under a point, never what else the drawing holds.
+   */
+  parts(): readonly string[];
+}
+
+/**
  * An avatar mounted in the document.
  *
  * `update` is called each frame; the avatar owns its reaction timers, which keeps the host ignorant
@@ -81,6 +111,8 @@ export interface AvatarInstance {
   setPalette(palette: AvatarPalette): void;
   resize(width: number, height: number): void;
   dispose(): void;
+  /** Present only where objects can be addressed one by one. See `AvatarPicking`. */
+  readonly picking?: AvatarPicking;
 }
 
 /** Vector (Rive) or volumetric (glTF). Selects the rendering engine. */

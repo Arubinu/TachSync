@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { avatarLabel, findAvatar } from '../avatar/registry';
 import type { AvatarLibrary } from '../avatar/useAvatars';
 import type { AvatarPalette } from '../avatar/types';
 import { AvatarStage } from '../avatar/AvatarStage';
+import { wouldEmptyAvatar } from '../avatar/hidden';
 import { useDemoStore } from './useDemoStore';
 import { BACKUP_EXTENSION } from './backup';
 import type { DrivingProfile } from '../simulation/driver';
@@ -19,25 +20,32 @@ import {
   ImportIcon,
   LookIcon,
   PersonIcon,
+  DropperIcon,
+  EyeIcon,
   SwapIcon,
   TrashIcon,
   VehicleIcon,
   WarningIcon,
 } from './icons';
 import { Modal } from './Modal';
-import { Tip } from './Tip';
+import { Tip, useTipMessage } from './Tip';
+import { TripChart } from './TripChart';
+import { REVEAL, useSwipeToDelete } from '../hooks/useSwipeToDelete';
+import { readTrace, weightOf, type TripTrace } from '../trips/trace';
 import { PickerList, SelectField, type PickerGroup, type PickerRequest } from './Picker';
 import { clampFontScale, FONT_SCALE_STEP, type AppSettings, type Orientation } from './layout';
 import { CATALOGUES, format, nextLanguage, useTranslation, type Translation } from '../i18n';
 import type { LanguageCode } from '../i18n';
 import { activeVehicle } from '../profiles/state';
+import { flattenForExport } from '../profiles/layouts';
+import type { VehiclePhoto } from '../profiles/photo';
 import { MIN_TRIPS, readBaseline } from '../analysis/baseline';
 import { Sentences } from './Sentences';
 import type { VehicleCalibration, VehicleRanges } from '../profiles/types';
 import { USABLE_SPREAD, type ModeSignature } from '../obd/calibration';
 import { redlineFromPeak } from '../obd/calibrationRun';
 import type { DriveMode } from '../analysis/driveMode';
-import { tripDate, tripFigures } from '../trips/format';
+import { byteSize, tripDate, tripFigures } from '../trips/format';
 import { ProfilesSection } from './ProfilesSection';
 import { TransferPanel } from './TransferPanel';
 import { addEntity, entityLabel } from '../profiles/actions';
@@ -99,6 +107,8 @@ export interface SettingsPanelProps {
   /** Trip history, most recent first. */
   readonly trips: readonly TripRecord[];
   readonly onClearTrips: () => void;
+  /** Removes one trip and its curves. */
+  readonly onDeleteTrip: (id: string) => void;
   /** The profile collections, and the means to administer them. */
   readonly profiles: ProfileState;
   readonly onProfilesChange: (state: ProfileState) => void;
@@ -113,6 +123,10 @@ export interface SettingsPanelProps {
   readonly onImportSettings: (file: File) => void;
   /** Available avatars, and the means to add or remove them. */
   readonly library: AvatarLibrary;
+  /** The active car's photograph, so exporting it can carry it. */
+  readonly vehiclePhoto: VehiclePhoto | null;
+  /** Stores a photograph that arrived in a vehicle file, against the id just assigned to it. */
+  readonly onAdoptPhoto: (vehicleId: string, photo: File) => void;
   /** The imported background image, or `null`. Its presence decides what the button does. */
   readonly wallpaper: StoredWallpaper | null;
   readonly onImportWallpaper: (file: File) => void;
@@ -138,6 +152,8 @@ export interface SettingsPanelProps {
   readonly onCalibrate: (() => void) | null;
   /** Report from the last restore. */
   readonly settingsReport: string | null;
+  /** Changes on every answer, so the same words twice show twice. */
+  readonly settingsReportId: number;
   readonly onClose: () => void;
 }
 
@@ -319,11 +335,14 @@ export function SettingsPanel({
   onResetTrip,
   trips,
   onClearTrips,
+  onDeleteTrip,
   profiles,
   onProfilesChange,
   onGridChange,
   onDeletePack,
   onExport,
+  vehiclePhoto,
+  onAdoptPhoto,
   wallpaper,
   onImportWallpaper,
   onRemoveWallpaper,
@@ -335,6 +354,7 @@ export function SettingsPanel({
   source,
   onCalibrate,
   settingsReport,
+  settingsReportId,
   onClose,
 }: SettingsPanelProps): React.JSX.Element {
   const t = useTranslation();
@@ -355,20 +375,22 @@ export function SettingsPanel({
 
   // The entity the three lists are looking at, whichever list that is.
   // The same reading the board uses, shown here so the setting can say what it found.
-  const baseline = readBaseline(
-    trips,
-    entityLabel(
+  const baseline = readBaseline(trips, {
+    id: activeVehicle(profiles).id,
+    label: entityLabel(
       activeVehicle(profiles),
       profiles.vehicles.indexOf(activeVehicle(profiles)),
       t.settings.vehicleProfile,
     ),
-  );
+  });
 
   const currentEntity =
     profileKind === 'people'
       ? activePerson(profiles)
       : profileKind === 'vehicles'
-        ? activeVehicle(profiles)
+        ? // Flattened here rather than in the panel: the file carries the exporter's own grid, and
+          // only this side knows who is driving.
+          flattenForExport(activeVehicle(profiles), profiles.personId)
         : activeAppearance(profiles);
 
   /**
@@ -378,6 +400,136 @@ export function SettingsPanel({
    * surfaces and it is no longer clear which one the back button closes.
    */
   const [picker, setPicker] = useState<PickerRequest | null>(null);
+  // One drawer open at a time, and one trip unfolded at a time: two curves at once turn a list
+  // into a page to scroll, and two open drawers make it unclear which one a tap would empty.
+  const [openedTrip, setOpenedTrip] = useState<string | null>(null);
+  const [shownTrip, setShownTrip] = useState<string | null>(null);
+
+  /*
+   * Aiming at an object to hide it.
+   *
+   * A mode rather than a list of checkboxes: the pieces of a drawing have no names worth showing -
+   * "earLeft", "panel" - and pointing at the thing is the only description that needs no glossary.
+   *
+   * Whether it is possible at all is answered by the mounted engine, not guessed from the file
+   * type. Assumed true until it answers, so the button does not change appearance on every avatar
+   * change before the engine has had its say.
+   */
+  const [picking, setPicking] = useState(false);
+  const [pickingSupported, setPickingSupported] = useState(true);
+  // What the mounted avatar is made of, so a hide that would empty it can be refused.
+  const [pickableParts, setPickableParts] = useState<readonly string[]>([]);
+  // What the mode has to say for itself: armed, or refused. A bubble rather than a line of text -
+  // it answers the tap on the button, and has nothing to add once read.
+  const pickingTip = useTipMessage();
+
+  const hiddenParts = settings.hiddenAvatarParts[settings.avatarId] ?? [];
+
+  /*
+   * Aiming never outlives the screen it was armed on.
+   *
+   * Left running it would arm the next visit to a screen where nothing explains the crosshair; and
+   * armed on an avatar that cannot be aimed at, it would leave the preview catching taps that name
+   * nothing. Leaving the panel needs no rule: the component goes with it.
+   */
+  if (picking && (section !== 'avatar' || !pickingSupported)) setPicking(false);
+
+  // Changing avatar ends it too, supported or not: the objects of the previous drawing are gone,
+  // and carrying the mode over invites hiding a piece of a character one was only passing through.
+  useEffect(() => {
+    setPicking(false);
+    // The bubble goes with the mode: "tap an object" left standing over a screen that no longer
+    // listens is an instruction to do something that will not work.
+    pickingTip.say(null);
+  }, [settings.avatarId, pickingTip.say]);
+
+  function hidePart(partId: string): void {
+    const current = settings.hiddenAvatarParts[settings.avatarId] ?? [];
+    if (current.includes(partId)) return;
+
+    /*
+     * The last object stays.
+     *
+     * Not for tidiness: an empty frame gives the tool nothing to aim at, so the gesture that
+     * emptied it could not undo it. Refused with a word rather than silently, a tap that does
+     * nothing reading as a fault.
+     */
+    if (wouldEmptyAvatar(pickableParts, current, partId)) {
+      pickingTip.say(t.settings.hideObjectsLastOne);
+      return;
+    }
+
+    onChange({
+      ...settings,
+      hiddenAvatarParts: {
+        ...settings.hiddenAvatarParts,
+        [settings.avatarId]: [...current, partId],
+      },
+    });
+  }
+
+  function showAllParts(): void {
+    // The key is removed rather than emptied, so an untouched avatar leaves no trace in storage or
+    // in a backup.
+    const { [settings.avatarId]: _hidden, ...rest } = settings.hiddenAvatarParts;
+    onChange({ ...settings, hiddenAvatarParts: rest });
+  }
+
+  /*
+   * The eyedropper, and the way back from it.
+   *
+   * Named here rather than written into the header, because when both show they are wrapped
+   * together - and a wrapper reads badly around an expression already three levels deep.
+   */
+  const dropperButton = (
+    <button
+      key="dropper"
+      type="button"
+      /*
+       * Hatched rather than disabled when the avatar cannot be aimed at.
+       *
+       * Disabled, the button explained itself only through `title`, which no touch screen ever
+       * shows - and it was also the trap: arming the mode, then stepping onto a Rive avatar, left
+       * the only way out greyed under the finger. It stays live and answers instead.
+       */
+      className={[
+        'modal__action',
+        picking ? 'is-active' : '',
+        pickingSupported ? '' : 'modal__action--unavailable',
+      ]
+        .filter((name) => name !== '')
+        .join(' ')}
+      onClick={() => {
+        if (!pickingSupported) {
+          pickingTip.say(t.settings.hideObjectsUnsupported);
+          return;
+        }
+        const armed = !picking;
+        setPicking(armed);
+        // Said on arming, taken back on leaving: a bubble still standing after the mode ended
+        // would be instructing nobody.
+        pickingTip.say(armed ? t.settings.hideObjectsHint : null);
+      }}
+      aria-pressed={picking}
+      aria-label={t.settings.hideObjects}
+      title={pickingSupported ? t.settings.hideObjects : t.settings.hideObjectsUnsupported}
+    >
+      <DropperIcon />
+    </button>
+  );
+
+  const showAllButton = (
+    <button
+      key="show-all"
+      type="button"
+      className="modal__action modal__action--inset"
+      onClick={showAllParts}
+      aria-label={t.settings.showAllObjects}
+      title={t.settings.showAllObjects}
+    >
+      <EyeIcon />
+    </button>
+  );
 
   return (
     /**
@@ -426,23 +578,57 @@ export function SettingsPanel({
             ]
           : []
       }
-      {...(profileKind === null || picker !== null
+      {...(picker !== null
         ? {}
-        : {
-            actions: [
-              <button
-                key="transfer"
-                type="button"
-                className={transferring ? 'modal__action is-on' : 'modal__action'}
-                onClick={() => setTransferring((on) => !on)}
-                aria-label={t.transfer.title}
-                aria-pressed={transferring}
-                title={t.transfer.title}
-              >
-                <SwapIcon />
-              </button>,
-            ],
-          })}
+        : profileKind !== null
+          ? {
+              actions: [
+                <button
+                  key="transfer"
+                  type="button"
+                  className={transferring ? 'modal__action is-active' : 'modal__action'}
+                  onClick={() => setTransferring((on) => !on)}
+                  aria-label={t.transfer.title}
+                  aria-pressed={transferring}
+                  title={t.transfer.title}
+                >
+                  <SwapIcon />
+                </button>,
+              ],
+            }
+          : section === 'avatar'
+            ? {
+                /*
+                 * The eyedropper sits beside the way back, where the transfer button sits one
+                 * section over: both turn the screen they are on into a mode, and the same corner
+                 * for the same kind of thing.
+                 *
+                 * The same button leaves the mode, so aiming is never a trap - which is also why
+                 * nothing here needs a confirm step.
+                 */
+                actions:
+                  hiddenParts.length === 0
+                    ? [dropperButton]
+                    : [
+                        /*
+                         * One outline around the two.
+                         *
+                         * Undoing exists only because of the tool beside it, and a shared frame
+                         * says so where two free-standing buttons would read as two instruments.
+                         *
+                         * A wrapper rather than a border grafted onto the second button: the fill
+                         * and the dashes then belong to a single box, so the dashes meet as one
+                         * run and the tool's rounded corner sits over a fill already there. Built
+                         * from two elements, the seam showed - the dashes restarted, and two
+                         * translucent fills stacked into a darker band along the join.
+                         */
+                        <span key="dropper-pair" className="modal__pair">
+                          {dropperButton}
+                          {showAllButton}
+                        </span>,
+                      ],
+              }
+            : {})}
       // Back goes up one step, never to the menu: from a list one returns to the section, not the
       // top.
       {...(picker !== null
@@ -609,7 +795,16 @@ export function SettingsPanel({
                     ],
                   )}
                   icon={KIND_ICON[profileKind]}
-                  onImport={(entity) => onProfilesChange(addEntity(profiles, profileKind, entity))}
+                  photo={profileKind === 'vehicles' ? vehiclePhoto : null}
+                  onImport={(entity, photo) => {
+                    const next = addEntity(profiles, profileKind, entity);
+                    onProfilesChange(next);
+                    // `addEntity` selects what it added, so the id to store the picture against is
+                    // the one now active - there is no other way to learn it from here.
+                    if (photo !== null && profileKind === 'vehicles') {
+                      onAdoptPhoto(next.vehicleId, photo);
+                    }
+                  }}
                 />
               ) : (
                 <ProfilesSection
@@ -714,6 +909,11 @@ export function SettingsPanel({
                   accent: findTheme(settings.themeId).colors.accent,
                   accentAlt: findTheme(settings.themeId).colors.accentAlt,
                 }}
+                picking={picking}
+                hiddenParts={hiddenParts}
+                onPick={hidePart}
+                onPickingSupported={setPickingSupported}
+                onPartsChange={setPickableParts}
               />
             )}
 
@@ -913,26 +1113,25 @@ export function SettingsPanel({
                 ) : (
                   <ul className="trips__list">
                     {trips.map((trip) => (
-                      <li key={trip.id} className="trips__item">
-                        <span className="trips__head">
-                          <span className="trips__date">
-                            {tripDate(trip.startedAt, settings.language)}
-                          </span>
-                          {/*
-                            A simulator demonstration would otherwise file among the real trips and
-                            skew every later reading of the history.
-                          */}
-                          {trip.source === 'simulated' && (
-                            <span className="trips__badge">{t.settings.simulator}</span>
-                          )}
-                        </span>
-
-                        <span className="trips__figures">
-                          {tripFigures(trip).map((figure) => (
-                            <span key={figure}>{figure}</span>
-                          ))}
-                        </span>
-                      </li>
+                      <TripRow
+                        key={trip.id}
+                        trip={trip}
+                        language={settings.language}
+                        opened={openedTrip === trip.id}
+                        onOpenedChange={(open) => setOpenedTrip(open ? trip.id : null)}
+                        expanded={shownTrip === trip.id}
+                        onToggle={() => {
+                          setShownTrip(shownTrip === trip.id ? null : trip.id);
+                          // The drawer folds away with the same tap. Left open beside the curves it
+                          // would be an armed delete button under a finger that asked to read.
+                          setOpenedTrip(null);
+                        }}
+                        onDelete={() => {
+                          setOpenedTrip(null);
+                          setShownTrip(null);
+                          onDeleteTrip(trip.id);
+                        }}
+                      />
                     ))}
                   </ul>
                 )}
@@ -990,9 +1189,6 @@ export function SettingsPanel({
                 <div className="backup__notice">
                   <WarningIcon />
                   <p className="backup__warning">{t.settings.backupWarning}</p>
-                  {settingsReport !== null && (
-                    <p className="report">{settingsReport}</p>
-                  )}
                 </div>
 
                 <div className="avatar-actions">
@@ -1027,7 +1223,13 @@ export function SettingsPanel({
         Outside the sections: the bubble answers the gesture, not the panel that received it, so it
         survives leaving the section - an answer is owed even to someone who has moved on.
       */}
+      {pickingTip.text !== null && (
+        <Tip key={`picking-${pickingTip.id}`} main={pickingTip.text} />
+      )}
       {wallpaperReport !== null && <Tip key={wallpaperReportId} main={wallpaperReport} />}
+      {settingsReport !== null && (
+        <Tip key={`backup-${settingsReportId}`} main={settingsReport} />
+      )}
     </Modal>
   );
 }
@@ -1045,6 +1247,12 @@ interface AvatarFieldProps {
   readonly onCycle: (direction: 1 | -1) => void;
   /** Active theme colours: the preview must show the avatar as it will be. */
   readonly palette: AvatarPalette;
+  /** Aiming at an object rather than watching the avatar. */
+  readonly picking: boolean;
+  readonly hiddenParts: readonly string[];
+  readonly onPick: (partId: string) => void;
+  readonly onPickingSupported: (supported: boolean) => void;
+  readonly onPartsChange: (parts: readonly string[]) => void;
 }
 
 /**
@@ -1061,10 +1269,15 @@ function AvatarField({
   library,
   onCycle,
   palette,
+  picking,
+  hiddenParts,
+  onPick,
+  onPickingSupported,
+  onPartsChange,
 }: AvatarFieldProps): React.JSX.Element {
   const t = useTranslation();
   const store = useDemoStore();
-  const { avatars, report, importFile, remove } = library;
+  const { avatars, report, reportId, importFile, remove } = library;
   const current = findAvatar(currentId);
   const position = avatars.findIndex((avatar) => avatar.id === current.id) + 1;
 
@@ -1077,15 +1290,24 @@ function AvatarField({
       {/*
         The avatar for real, above its picker.
 
-        The catalogue sticks to a symbol for its thumbnails - mounting a rendering engine per entry
-        would be absurd. Here there is only one, and seeing it is exactly what one came for.
-
         Fed by the demo stream: frozen, it would not show what distinguishes two avatars, namely
-        how they react.
+        how they react. It is also the surface the eyedropper aims at, which is why the preview is
+        here rather than reduced to a thumbnail.
       */}
       <div className="avatar-preview">
-        <AvatarStage store={store} avatarId={currentId} palette={palette} mirrored={false} />
+        <AvatarStage
+          store={store}
+          avatarId={currentId}
+          palette={palette}
+          mirrored={false}
+          picking={picking}
+          hiddenParts={hiddenParts}
+          onPick={onPick}
+          onPickingSupported={onPickingSupported}
+          onPartsChange={onPartsChange}
+        />
       </div>
+
 
       <div className="avatar-picker">
         <button
@@ -1156,7 +1378,8 @@ function AvatarField({
         )}
       </div>
 
-      {report !== null && <p className="report">{report}</p>}
+      {/* Floating, like every other answer to a gesture: it has nothing to add once read. */}
+      {report !== null && <Tip key={reportId} main={report} />}
     </div>
   );
 }
@@ -1289,5 +1512,122 @@ function CalibrationSummary({
         </>
       )}
     </>
+  );
+}
+
+/**
+ * One trip: what it was, what deletes it, and what it looked like.
+ *
+ * The drawer is the catalogue's, through the same hook rather than a second implementation - a
+ * gesture that opened at a different distance here would read as a different mechanism.
+ *
+ * The curves are fetched only when asked for. A list of thirty trips would otherwise read thirty
+ * traces to draw one.
+ */
+function TripRow({
+  trip,
+  language,
+  opened,
+  onOpenedChange,
+  expanded,
+  onToggle,
+  onDelete,
+}: {
+  readonly trip: TripRecord;
+  readonly language: LanguageCode;
+  readonly opened: boolean;
+  readonly onOpenedChange: (opened: boolean) => void;
+  readonly expanded: boolean;
+  readonly onToggle: () => void;
+  readonly onDelete: () => void;
+}): React.JSX.Element {
+  const t = useTranslation();
+  const [trace, setTrace] = useState<TripTrace | null>(null);
+  const { offset, dragging, handlers } = useSwipeToDelete({
+    opened,
+    onOpenedChange,
+    enabled: true,
+    onTap: onToggle,
+  });
+
+  /*
+   * Fetched once the row is either unfolded or open.
+   *
+   * The drawer needs it too, not only the curves: the button says what deleting this trip frees,
+   * and a figure that appeared a moment after the button did would be read as something changing.
+   */
+  useEffect(() => {
+    if (!expanded && !opened) return;
+    let alive = true;
+    void readTrace(trip.id).then((found) => {
+      if (alive) setTrace(found);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [expanded, opened, trip.id]);
+
+  return (
+    <li className="trips__entry">
+      <div
+        className={offset < 0 ? 'trips__row is-open' : 'trips__row'}
+        style={{ '--reveal': `${REVEAL}px` } as React.CSSProperties}
+      >
+        {/*
+          Out of the keyboard path while hidden, or tabbing would cross invisible delete buttons.
+        */}
+        <button
+          type="button"
+          className="trips__remove"
+          onClick={onDelete}
+          tabIndex={opened ? 0 : -1}
+          aria-hidden={!opened}
+          aria-label={t.settings.remove}
+        >
+          {/*
+            What this frees, above the bin. Nothing at all for a trip with no trace: "0 ko" would
+            promise a saving that deleting it cannot make.
+          */}
+          {trace !== null && (
+            <span className="trips__weight">{byteSize(weightOf(trace), language)}</span>
+          )}
+          <TrashIcon />
+        </button>
+
+        <div
+          className={offset < 0 ? 'trips__sliding is-open' : 'trips__sliding'}
+          style={{
+            transform: `translateX(${offset}px)`,
+            transition: dragging ? 'none' : undefined,
+          }}
+          {...handlers}
+        >
+          <div className="trips__item">
+            <span className="trips__head">
+              <span className="trips__date">{tripDate(trip.startedAt, language)}</span>
+              {/*
+                A simulator demonstration would otherwise file among the real trips and skew every
+                later reading of the history.
+              */}
+              {trip.source === 'simulated' && (
+                <span className="trips__badge">{t.settings.simulator}</span>
+              )}
+            </span>
+
+            <span className="trips__figures">
+              {tripFigures(trip).map((figure) => (
+                <span key={figure}>{figure}</span>
+              ))}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/*
+        Nothing at all when there is no trace: trips recorded before this existed have none, and an
+        empty frame would suggest a drive with nothing in it.
+      */}
+      {expanded && trace !== null && <TripChart trace={trace} />}
+    </li>
   );
 }

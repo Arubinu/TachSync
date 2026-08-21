@@ -312,6 +312,48 @@ export function LookIcon(): React.JSX.Element {
 }
 
 /** Two arrows passing, for moving something in or out. */
+/** An open eye: what was taken out of the drawing comes back. */
+export function EyeIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className="icon" aria-hidden focusable="false">
+      <path
+        d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
+        fill="none"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <circle cx="12" cy="12" r="2.8" fill="none" strokeWidth="1.7" />
+    </svg>
+  );
+}
+
+/**
+ * Eyedropper, drawn as photo editors draw it: a sharp point at the lower left, a thin shaft, the
+ * ferrule where the bulb is fitted, and the bulb closed by a half-round cap.
+ *
+ * One closed outline rather than assembled pieces. Built from a single diagonal axis, each vertex
+ * being a half-width offset perpendicular to it, which is what keeps the two sides parallel - an
+ * earlier attempt drew them freehand and came out reading as a pair of tweezers.
+ *
+ * Stroked rather than solid, unlike the toolbar icon it borrows from: in the header it sits between
+ * the back chevron and the close cross, and a filled silhouette there would read as heavier than
+ * its neighbours. `fill="none"` is the only thing separating the two.
+ */
+export function DropperIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className="icon" aria-hidden focusable="false">
+      <path
+        d="M3 21 4.09 19.27 9.97 12.41 9.08 10.82 10.14 9.76 10.49 9.83 14.95 5.37
+           A2.6 2.6 0 1 1 18.63 9.05
+           L14.17 13.51 14.24 13.86 13.18 14.92 11.59 14.03 4.73 19.91Z"
+        fill="none"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function SwapIcon(): React.JSX.Element {
   return (
     <svg viewBox="0 0 24 24" className="icon" aria-hidden focusable="false">
@@ -329,6 +371,99 @@ export function SwapIcon(): React.JSX.Element {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
+    </svg>
+  );
+}
+
+/**
+ * Flipping across a vertical axis.
+ *
+ * The axis is dashed and the two shapes are the same shape faced the other way: that IS the
+ * operation, drawn. `SwapIcon` next door is two arrows trading places, which says exchange rather
+ * than reflect - close enough to reach for by mistake, far enough to mislead.
+ */
+export function MirrorIcon(): React.JSX.Element {
+  return (
+    <svg viewBox="0 0 24 24" className="icon" aria-hidden focusable="false">
+      <path
+        d="M12 3 V21"
+        fill="none"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeDasharray="2.4 2.6"
+      />
+      <path
+        d="M9.3 6.6 L3.6 12 L9.3 17.4 Z"
+        fill="none"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14.7 6.6 L20.4 12 L14.7 17.4 Z"
+        fill="none"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/**
+ * Text alignment, as every editor draws it: bars of unequal length, ranged the way the text is.
+ *
+ * `null` is the theme's own, and gets full-width bars - the one variant that ranges nothing, which
+ * is what "not chosen" looks like. Drawing it as left would have claimed a choice nobody made.
+ */
+export function AlignIcon({ align }: { readonly align: string | null }): React.JSX.Element {
+  // Each row is a bar: [start, end] across the 24 box. Short bars alternate with long ones so the
+  // ranging is legible at a glance rather than by comparing two similar shapes.
+  const rows =
+    align === 'left'
+      ? [
+          [4, 20],
+          [4, 14],
+          [4, 20],
+          [4, 12],
+        ]
+      : align === 'center'
+        ? [
+            [4, 20],
+            [7, 17],
+            [4, 20],
+            [8, 16],
+          ]
+        : align === 'right'
+          ? [
+              [4, 20],
+              [10, 20],
+              [4, 20],
+              [12, 20],
+            ]
+          : /*
+             * The theme's own: bars that range no particular way.
+             *
+             * Four full-width ones - the classic "justify" glyph - read as a hamburger menu in a
+             * header full of icons. Alternating short ends says "not set" without borrowing a
+             * shape that already means something else here.
+             */
+            [
+              [4, 20],
+              [4, 13],
+              [11, 20],
+              [4, 20],
+            ];
+
+  return (
+    <svg viewBox="0 0 24 24" className="icon" aria-hidden focusable="false">
+      {rows.map(([from, to], index) => (
+        <path
+          key={index}
+          d={`M${from} ${6.5 + index * 3.7} H${to}`}
+          fill="none"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+        />
+      ))}
     </svg>
   );
 }

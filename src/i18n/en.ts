@@ -10,6 +10,13 @@ export const en: Translation = {
   languageName: 'English',
   roadRules: 'On public roads the highway code comes first. This application never justifies an infringement, and no step of the calibration requires one.',
 
+  driver: {
+    title: 'Who is driving?',
+    hold: 'Hold a name to change its icon.',
+    addPhoto: 'Add a photo',
+    removePhoto: 'Remove the photo',
+    chooseIcon: 'Choose an icon',
+  },
   terms: {
     title: 'Before driving',
     lead: 'This application displays. It does not drive.',
@@ -79,10 +86,14 @@ export const en: Translation = {
     profileName: 'Rename',
     vehicleDetected: 'New vehicle detected',
     nameHint: 'Tap to name it, or do it later in the profile settings.',
+    grids: 'Grids',
+    gridCount: '{count} grid(s)',
+    joinGrid: 'Join',
+    splitGrid: 'Use my own',
+    gridEmpty: 'Nobody yet',
     topSpeed: 'Top speed',
     redline: 'Redline',
     duplicate: 'Duplicate',
-    newProfile: 'New',
     appearance: 'Appearance',
     background: 'Background',
     avatar: 'Avatar',
@@ -113,47 +124,7 @@ export const en: Translation = {
     export: 'Export',
     import: 'Import',
     remove: 'Remove',
-    backupHint:
-      'Settings and avatars in a single .{ext} file. Everything lives in this browser; importing replaces it all.',
     backupWarning: 'Everything is reset on import!',
-    backupNotice: `TACHSYNC BACKUP
-===============
-
-This file is an ordinary ZIP archive under an application-specific
-extension. To open it with your system tool, rename it to .zip —
-nothing else is needed.
-
-CONTENTS
---------
-
-  {settings}
-      Your settings, as indented JSON: tile layout per orientation,
-      imported tiles and backgrounds, chosen avatar, text scale.
-      Readable and editable in any text editor.
-
-  {avatars}
-      The avatar files you had imported, as-is (.riv, .glb or .gltf).
-      They do not fit in the settings file: they are binaries of
-      several megabytes.
-
-{list}{wallpaper}
-
-  {readme}
-      This notice.
-
-RESTORING
----------
-
-Settings -> Backup -> Import, and pick this file. Settings and avatars
-are restored together.
-
-Importing REPLACES the whole existing configuration.
-
-Only .{ext} files are accepted. If all you have is an old {settings} on
-its own, put it in a zip archive under that exact name, rename the
-archive to .{ext}, and it will be read normally.
-`,
-    backupNoticeNoAvatars: '  (no avatar imported at the time of the backup)',
     backupSaved: 'Backup saved.',
     backupSavedWithAvatars: 'Backup saved, with {count} avatar(s).',
     settingsRestored: 'Settings restored.',
@@ -163,10 +134,14 @@ archive to .{ext}, and it will be read normally.
     importBackground: 'Import an image',
     removeBackground: 'Remove the image',
     importedImage: 'Imported image',
-    backupNoticeWallpaper: '  wallpaper/\n      The background image you had imported, as-is.',
     defaultBackground: 'Default',
     noTheme: 'No theme',
     previousAvatar: 'Previous avatar',
+    hideObjects: 'Hide an object',
+    hideObjectsHint: 'Tap an object to hide it. Tap the button again to leave.',
+    hideObjectsUnsupported: 'This avatar does not expose its objects one by one.',
+    hideObjectsLastOne: 'At least one object has to stay visible.',
+    showAllObjects: 'Show everything again',
     nextAvatar: 'Next avatar',
     close: 'Close',
   },
@@ -188,14 +163,14 @@ archive to .{ext}, and it will be read normally.
   },
 
   editor: {
-    layout: 'Layout',
+    layout: 'Resize',
+    tabSize: 'Size',
+    tabOptions: 'Options',
     noRoom: 'No room: another tile is in the way.',
     boardFull: 'No room: the board is too crowded.',
     holdForSettings: 'Hold to open the settings.',
     scale: 'Scale',
     layer: 'Layer',
-    orientation: 'Orientation',
-    normal: 'Normal',
     mirrored: 'Mirrored',
     whenMissing: 'When the value is missing',
     missingOnVehicle: 'This value does not exist on the connected vehicle.',
@@ -212,6 +187,10 @@ archive to .{ext}, and it will be read normally.
     tile: 'Tile',
     spacing: 'Spacing',
     spacingAuto: 'Theme',
+    align: 'Alignment',
+    alignLeft: 'Left',
+    alignCenter: 'Centred',
+    alignRight: 'Right',
     dressing: 'Dressing',
     caption: 'Caption',
     captions: {
@@ -245,11 +224,8 @@ archive to .{ext}, and it will be read normally.
     exitEditMode: 'Exit edit mode',
     back: 'Back to the previous menu',
     columns: 'Columns',
-    columnsShort: 'Col.',
     rows: 'Rows',
-    rowsShort: 'Rows',
     add: 'add',
-    subtract: 'remove',
     activeLayer: 'Active layer: {layer}. Move to the next one',
   },
 
@@ -274,6 +250,7 @@ archive to .{ext}, and it will be read normally.
   },
 
   metrics: {
+    peak: 'max',
     speed: 'Speed',
     rpm: 'Engine speed',
     gear: 'Gear',
@@ -380,7 +357,6 @@ archive to .{ext}, and it will be read normally.
     notAnImage: 'This file is not an image!',
     imageTooLarge: 'Image too heavy: {size} MB (max 16).',
     noTilesFound: 'No tile or background found in this file.',
-    storageUnavailable: 'Storage unavailable.',
     notAnEntity: 'This file was not exported from TachSync.',
     wrongEntityKind: 'This file does not hold a {kind}.',
     unreadableAvatarFile: 'Avatar file could not be read.',

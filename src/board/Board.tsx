@@ -17,7 +17,9 @@ import type { AnyChannel } from '../telemetry/types';
 import { useTranslation } from '../i18n';
 import { findTheme, themeToTileVariables, type ThemeManifest } from '../theme/themes';
 import {
+  alignVariables,
   flushEdges,
+  forcedEdges,
   hasRoomFor,
   isTileVisible,
   LAYERS,
@@ -578,6 +580,7 @@ export function Board(props: BoardProps): React.JSX.Element {
           presets={settings.presets}
           themeId={settings.themeId}
           onThemeChange={props.onCatalogThemeChange}
+          avatarId={settings.avatarId}
           metricFilter={settings.metricFilter}
           onMetricFilterChange={props.onMetricFilterChange}
           onClose={onCloseCatalog}
@@ -589,32 +592,15 @@ export function Board(props: BoardProps): React.JSX.Element {
 
       <DragOverlay dropAnimation={null}>
         {draggedTile !== null && (
-          <div
-            className={valid ? 'tile tile--floating' : 'tile tile--floating is-invalid'}
-            style={
-              {
-                // The floating tile keeps the theme it will have once placed: what is being moved
-                // must look like the result.
-                ...themeToTileVariables(
-                  draggedTile.themeId === null ? props.theme : findTheme(draggedTile.themeId),
-                ),
-                '--tile-font-scale': draggedTile.fontScale,
-              } as React.CSSProperties
-            }
-          >
-            <TileContent
-              tile={draggedTile}
-              store={props.store}
-              avatarId={settings.avatarId}
-              palette={{
-                accent: props.theme.colors.accent,
-                accentAlt: props.theme.colors.accentAlt,
-              }}
-              gauge={props.theme.tile.gauge}
-              baselineShift={props.baselineShift}
-              ranges={props.ranges}
-            />
-          </div>
+          <FloatingTile
+            tile={draggedTile}
+            valid={valid}
+            theme={props.theme}
+            store={props.store}
+            avatarId={settings.avatarId}
+            baselineShift={props.baselineShift}
+            ranges={props.ranges}
+          />
         )}
       </DragOverlay>
 
@@ -728,6 +714,7 @@ function DraggableTile({
        */
       data-flush={flushEdges(tile, board.layout.columns, board.layout.rows)}
       data-chrome={tile.chrome}
+      {...(tile.align === null ? {} : { 'data-align': tile.align })}
       data-caption={tile.caption}
       /**
        * Per-tile spacing, exposed twice on purpose.
@@ -741,6 +728,7 @@ function DraggableTile({
       style={
         {
           ...themeToTileVariables(theme),
+          ...alignVariables(tile.align),
           gridColumn: `${tile.colStart} / span ${tile.colSpan}`,
           gridRow: `${tile.rowStart} / span ${tile.rowSpan}`,
           '--tile-font-scale': tile.fontScale,
@@ -877,4 +865,68 @@ function cellUnderPoint(metrics: GridMetrics, x: number, y: number): { col: numb
     col: Math.floor((x - metrics.left) / (metrics.cellWidth + metrics.colGap)) + 1,
     row: Math.floor((y - metrics.top) / (metrics.cellHeight + metrics.rowGap)) + 1,
   };
+}
+
+/**
+ * The tile under the finger.
+ *
+ * It carries everything the placed tile carries - dressing, chrome, caption, spacing, theme - so
+ * what is being moved looks like the result. It used to take only the theme, and a tile with no
+ * border and no fill grew both the moment it was picked up.
+ *
+ * The one exception is the edges. `auto` means "touching the board here", and a tile in the air
+ * touches nothing: only a side deliberately forced still applies.
+ */
+function FloatingTile({
+  tile,
+  valid,
+  theme,
+  store,
+  avatarId,
+  baselineShift,
+  ranges,
+}: {
+  readonly tile: TileConfig;
+  readonly valid: boolean;
+  readonly theme: ThemeManifest;
+  readonly store: TelemetryStore;
+  readonly avatarId: string;
+  readonly baselineShift: number;
+  readonly ranges: VehicleRanges;
+}): React.JSX.Element {
+  // The same variables the placed tile publishes: an imported dressing that reacts to speed has to
+  // keep reacting while it is carried, or it changes appearance in the hand.
+  const setVariablesRef = useTileVariables(store, tile.metrics, ranges);
+  const own = tile.themeId === null ? theme : findTheme(tile.themeId);
+
+  return (
+    <div
+      ref={setVariablesRef}
+      className={`${tileClassName(tile, false)} tile--floating${valid ? '' : ' is-invalid'}`}
+      {...(tile.presetId === null ? {} : { 'data-preset': tile.presetId })}
+      data-flush={forcedEdges(tile)}
+      data-chrome={tile.chrome}
+      {...(tile.align === null ? {} : { 'data-align': tile.align })}
+      data-caption={tile.caption}
+      {...(tile.spacing === null ? {} : { 'data-spacing': tile.spacing })}
+      style={
+        {
+          ...themeToTileVariables(own),
+          ...alignVariables(tile.align),
+          '--tile-font-scale': tile.fontScale,
+          ...(tile.spacing === null ? {} : { '--tile-spacing': `${tile.spacing}px` }),
+        } as React.CSSProperties
+      }
+    >
+      <TileContent
+        tile={tile}
+        store={store}
+        avatarId={avatarId}
+        palette={{ accent: theme.colors.accent, accentAlt: theme.colors.accentAlt }}
+        gauge={theme.tile.gauge}
+        baselineShift={baselineShift}
+        ranges={ranges}
+      />
+    </div>
+  );
 }

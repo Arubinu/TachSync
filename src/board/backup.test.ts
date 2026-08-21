@@ -12,7 +12,7 @@ import type { StoredWallpaper } from './wallpaper';
 // Language changes nothing about the archive mechanics: English is enough here, and `i18n.test.ts`
 // guarantees the other catalogues follow.
 const writeBackup = (profiles: ProfileState, avatars: readonly ImportedAvatar[]) =>
-  createBackup(profiles, [], avatars, null, en);
+  createBackup(profiles, [], avatars, null, []);
 const readBackupFile = (file: File) => readBackup(file, en);
 
 function avatar(fileName: string, content: string): ImportedAvatar {
@@ -53,17 +53,16 @@ describe('full backup', () => {
     expect(result.avatars).toHaveLength(0);
   });
 
-  it('carries a notice describing the contents', async () => {
-    const archive = await writeBackup(BASE, [avatar('face.riv', 'X')]);
-    const entries = await (await import('./archive')).readArchive(archive);
-    const notice = entries.find((e) => e.name === 'README.txt');
+  it('carries only what it was given', async () => {
+    // Nothing writes itself into the archive uninvited: it held a README that explained the
+    // format, and explaining a format nobody opens by hand is not what a backup is for.
+    const entries = await readArchive(await writeBackup(BASE, [avatar('face.riv', 'X')]));
 
-    const noticeText = new TextDecoder().decode(notice?.data);
-    // The backup resurfaces months later without the application to explain it: it must document
-    // itself.
-    expect(noticeText).toContain('ZIP archive');
-    expect(noticeText).toContain('profiles.json');
-    expect(noticeText).toContain('avatars/face.riv');
+    expect(entries.map((e) => e.name).sort()).toEqual([
+      'avatars/face.riv',
+      'profiles.json',
+      'trips.json',
+    ]);
   });
 
   it('refuses an archive with no settings', async () => {
@@ -122,7 +121,10 @@ describe('what a backup carries', () => {
     // one rebuilt a single set and quietly dropped everyone else.
     const crowded: ProfileState = {
       ...BASE,
-      people: [...BASE.people, { id: 'person-2', label: 'Alex', appearanceId: BASE.appearances[0]!.id }],
+      people: [
+        ...BASE.people,
+        { id: 'person-2', label: 'Alex', appearanceId: BASE.appearances[0]!.id, icon: 'chat' },
+      ],
       vehicles: [...BASE.vehicles, { ...BASE.vehicles[0]!, id: 'vehicle-2', label: 'Van' }],
     };
 
@@ -147,7 +149,7 @@ describe('what a backup carries', () => {
       vehicle: 'Van',
     } as unknown as TripRecord;
 
-    const archive = await createBackup(BASE, [trip], [], null, en);
+    const archive = await createBackup(BASE, [trip], [], null, []);
     const result = await readBackupFile(asFile(archive));
 
     expect(result.trips.map((t) => t.id)).toEqual(['t1']);
@@ -182,7 +184,7 @@ describe('the imported background image', () => {
   });
 
   it('travels in the archive and comes back', async () => {
-    const archive = await createBackup(BASE, [], [], image('sunset.png', 'PNGDATA'), en);
+    const archive = await createBackup(BASE, [], [], image('sunset.png', 'PNGDATA'), []);
     const result = await readBackupFile(asFile(archive));
 
     expect(result.wallpaper?.name).toBe('sunset.png');
@@ -198,16 +200,6 @@ describe('the imported background image', () => {
     expect(result.error).toBeNull();
   });
 
-  it('names the image in the notice, and only when there is one', async () => {
-    const noticeOf = async (wallpaper: StoredWallpaper | null): Promise<string> => {
-      const entries = await readArchive(await createBackup(BASE, [], [], wallpaper, en));
-      return new TextDecoder().decode(entries.find((e) => e.name === 'README.txt')?.data);
-    };
-
-    expect(await noticeOf(image('sunset.png', 'PNGDATA'))).toContain('wallpaper/');
-    expect(await noticeOf(null)).not.toContain('wallpaper/');
-  });
-
   it('ignores anything in that folder which is not an image', async () => {
     // A hand-edited archive can hold anything; the folder name is not a promise.
     const archive = createArchive([
@@ -216,5 +208,47 @@ describe('the imported background image', () => {
     ]);
 
     expect((await readBackupFile(asFile(archive))).wallpaper).toBeNull();
+  });
+});
+
+describe('vehicle photographs in a backup', () => {
+  const photo = (id: string, name: string, content: string) => ({
+    id,
+    fileName: name,
+    type: 'image/webp',
+    size: content.length,
+    data: new Blob([content]),
+  });
+
+  it('keeps each picture paired with its car', async () => {
+    // Two cars photographed from the same phone arrive as the same file name: the id has to be
+    // carried by the archive itself, or a restore hands the wrong picture to the wrong vehicle.
+    const archive = await createBackup(
+      BASE,
+      [],
+      [],
+      null,
+      [photo('v1', 'IMG_0042.webp', 'FIRST'), photo('v2', 'IMG_0042.webp', 'SECOND')],
+    );
+    const result = await readBackupFile(asFile(archive));
+
+    const byCar = Object.fromEntries(
+      await Promise.all(result.photos.map(async (p) => [p.vehicleId, await p.file.text()])),
+    );
+
+    expect(byCar).toEqual({ v1: 'FIRST', v2: 'SECOND' });
+  });
+
+  it('reads a backup written before photographs as having none', async () => {
+    expect((await readBackupFile(asFile(await writeBackup(BASE, [])))).photos).toEqual([]);
+  });
+
+  it('ignores anything in that folder which is not a picture', async () => {
+    const hand = createArchive([
+      { name: 'profiles.json', data: new TextEncoder().encode(JSON.stringify(BASE)) },
+      { name: 'photos/v1/notes.txt', data: new TextEncoder().encode('hello') },
+    ]);
+
+    expect((await readBackupFile(asFile(hand))).photos).toEqual([]);
   });
 });

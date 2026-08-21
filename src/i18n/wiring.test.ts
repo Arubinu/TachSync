@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { createArchive } from '../board/archive';
-import { createBackup, readBackup } from '../board/backup';
+import { readBackup } from '../board/backup';
 import { parseSettingsFile } from '../board/settingsFile';
 import { parseTilePack } from '../board/tileImport';
 import { readAvatarFile } from '../avatar/importAvatar';
-import { toProfileState } from '../profiles/migrate';
-import { DEFAULT_SETTINGS } from '../board/layout';
 import { de } from './de';
 import { fr } from './fr';
 
@@ -44,18 +42,6 @@ describe('import messages follow the language', () => {
     // The missing entry's name stays the same everywhere: it is a file name, not a sentence.
     expect((await readBackup(file, fr)).error).toContain('profiles.json');
     expect((await readBackup(file, de)).error).toContain('profiles.json');
-  });
-
-  it('writes the archive notice in the requested language', async () => {
-    const noticeOf = async (t: typeof fr) => {
-      const entries = await (await import('../board/archive')).readArchive(
-        await createBackup(toProfileState(DEFAULT_SETTINGS), [], [], null, t),
-      );
-      return new TextDecoder().decode(entries.find((e) => e.name === 'README.txt')?.data);
-    };
-
-    expect(await noticeOf(fr)).toContain('SAUVEGARDE TACHSYNC');
-    expect(await noticeOf(de)).toContain('TACHSYNC-SICHERUNG');
   });
 
   it('reports a pack with no tile in the requested language', () => {

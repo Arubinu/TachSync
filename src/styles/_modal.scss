@@ -55,20 +55,39 @@
   color: var(--ui-text);
   overflow: hidden;
 
+  /*
+   * Three columns, the outer two equal: the title is centred by construction.
+   *
+   * It used to be a flex row balanced by ghosts - one invisible button on the right for each real
+   * one on the left. That works only while both sides hold the same NUMBER of equally wide slots,
+   * and `leading` may hold any number: a window with one delete button on the left and two controls
+   * on the right put its title 25 px off centre, measured. Equal side tracks cannot be off by
+   * anything, whatever each side carries.
+   */
   &__header {
     flex: none;
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
-    // Controls were touching once a screen offered a second one beside back. The gap applies to
-    // every slot, so nothing is spaced as a special case.
     gap: var(--sp-2);
     padding: 0.6rem 0.7rem;
     border-bottom: 1px solid var(--ui-border);
   }
 
+  // Controls were touching once a screen offered a second one beside back. The gap applies to
+  // every slot, so nothing is spaced as a special case.
+  &__side {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+
+  &__side--end {
+    justify-content: flex-end;
+  }
+
   &__title {
-    flex: 1;
     min-width: 0;
     text-align: center;
     font-size: 0.85rem;
@@ -78,12 +97,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  // Holds its place without showing, so the title stays centred when the window has nothing to
-  // delete. `visibility` rather than `display`: the footprint is exactly what must be kept.
-  &__action--ghost {
-    visibility: hidden;
   }
 
   &__action {
@@ -120,6 +133,54 @@
     border-style: dashed;
   }
 
+  /*
+   * A tool and the way back from it, framed as one control.
+   *
+   * The frame carries the fill and the dashes, the tool sits on top with its own outline, the
+   * second button has neither. One box means one run of dashes, a rounded corner resting on a fill
+   * already there, and no two translucent fills stacking into a darker band down the seam.
+   */
+  &__pair {
+    display: flex;
+    align-items: stretch;
+    box-sizing: border-box;
+    height: var(--control-h);
+    border: 1px dashed var(--ui-border);
+    border-radius: var(--r-sm);
+    background: color-mix(in srgb, var(--ui-text-muted) 10%, transparent);
+
+    /*
+     * Covers the frame's outline on its three shared sides; only what reaches past stays dashed.
+     *
+     * The fill is opaque, mixed to look translucent: left transparent, the frame's dashes showed
+     * through the tool's own border and it read dotted where it must read solid.
+     *
+     * Height comes from the frame rather than being declared twice - a pixel of rounding between
+     * two `--control-h` put the tool above its frame, dashes showing along the bottom.
+     */
+    > .modal__action {
+      align-self: stretch;
+      height: auto;
+      margin: -1px 0 -1px -1px;
+      background: color-mix(in srgb, var(--ui-text-muted) 10%, var(--ui-bg));
+    }
+
+    // Opaque for the same reason. Here rather than with the state's own rule, which sits later and
+    // would win with its translucent fill.
+    > .modal__action.is-active {
+      background: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-bg));
+    }
+
+    // Inside the frame: no outline, no fill, only the icon and the area to press.
+    > .modal__action--inset {
+      align-self: stretch;
+      height: auto;
+      margin: 0;
+      border: none;
+      background: none;
+    }
+  }
+
   &__body {
     flex: 1;
     min-height: 0;
@@ -141,11 +202,6 @@
     // default is its min-content size, not zero.
     min-width: 0;
 
-    &--centered {
-      align-items: center;
-      text-align: center;
-    }
-
     h3 {
       font-size: 0.68rem;
       text-transform: uppercase;
@@ -161,19 +217,50 @@
       }
     }
   }
+}
 
-  &__note {
-    font-size: 0.78rem;
-    color: var(--ui-text-muted);
-    line-height: 1.45;
+// The tile editor's two halves, written as the window's own overlines: these are section titles
+// like ECHELLE or BORDS below, and a filled segmented control spoke a language nothing else does.
+.editor__tabs {
+  display: flex;
+  // Out to the window's edges: the rule then divides the window as the header's does. Inset, two
+  // rules of different widths one under the other looked like a misalignment.
+  margin: calc(var(--sp-4) * -1) calc(var(--sp-4) * -1) var(--sp-4);
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.editor__tab {
+  flex: 1 1 0;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: var(--tr-overline);
+  font-weight: var(--fw-medium);
+  // Comfortably past the 44 px a finger needs, this being the control that replaces scrolling.
+  padding: 0.9rem 0.4rem;
+  border: none;
+  // The mark lies on the row's rule. Transparent on every tab, so labels do not shift as the
+  // choice moves.
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  background: none;
+  color: var(--ui-text-muted);
+  cursor: pointer;
+
+  &.is-active {
+    color: var(--ui-accent);
+    border-bottom-color: var(--ui-accent);
   }
 
-  &__choices {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    justify-content: center;
+  &:hover:not(.is-active) {
+    color: var(--ui-text);
   }
+}
+
+// A plain block, so `hidden` is not fighting a `display` of its own.
+.editor__panel[hidden] {
+  display: none;
 }
 
 // The grid is the control: no more rails, no more gutters.
@@ -323,12 +410,24 @@
 //
 // The tile is therefore drawn at its real board size and optically reduced, so the `cqh`, the
 // floors, the container-query thresholds and any later rule all follow with nothing to copy.
-.layout-picker__tile {
+/*
+ * The cell the tile would have on the board, at board size, shrunk to fit the model.
+ *
+ * A frame around the tile rather than the tile itself. On the board a tile is a GRID ITEM, so its
+ * margin insets it inside its cell and the box shrinks by twice the spacing. Absolutely positioned
+ * with a width of its own, the same margin merely offset it: raising the spacing slid the content
+ * sideways instead of tightening the tile, and the figure - sized from the box - never followed.
+ *
+ * A grid of one cell puts the tile back in the situation it is in on the board, and every rule
+ * that reads the box follows by itself.
+ */
+.layout-picker__frame {
   // Out of flow: an absolutely positioned element never contributes to its parent's size, which
   // stops the propagation at the root rather than halfway.
   position: absolute;
   top: 0;
   left: 0;
+  display: grid;
   // The room it would occupy on the board, to the pixel.
   width: calc(var(--board-w) * 1px / var(--cols) * var(--span-cols));
   height: calc(var(--board-h) * 1px / var(--rows) * var(--span-rows));
@@ -340,12 +439,10 @@
   pointer-events: none;
 }
 
-// Window-specific controls, grouped in the left corner. They take the place the bin or the back
-// arrow occupy elsewhere, so the title shifts slightly when there are two of them.
-.modal__leading {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+.layout-picker__tile {
+  // Stretched into the single cell, which is what lets the margin inset it.
+  min-width: 0;
+  min-height: 0;
 }
 
 // A file label disguised as a button inherits neither the cursor nor the centring: give them back.
@@ -365,6 +462,19 @@ label.modal__action {
   &:hover {
     background: color-mix(in srgb, var(--ui-accent) 16%, transparent);
   }
+}
+
+// Offered but not available here. Hatched rather than greyed: grey reads as "off" and invites a
+// tap, hatching reads as "not for this". The button stays live and says why when tapped - a
+// disabled control explains itself only through `title`, which no touch screen shows.
+.modal__action--unavailable {
+  color: var(--ui-text-muted);
+  // Under the button's own border in weight: noticed, never read as a warning.
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent 0 5px,
+    color-mix(in srgb, var(--ui-text-muted) 13%, transparent) 5px 6.5px
+  );
 }
 
 // An active filter announces itself, otherwise nothing distinguishes a filtered list from an empty

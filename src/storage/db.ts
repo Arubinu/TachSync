@@ -13,13 +13,16 @@
 const DB_NAME = 'tachsync';
 
 /**
- * 1 - imported avatars. 2 - recorded trips. 3 - the imported background image.
+ * 1 - imported avatars. 2 - recorded trips. 3 - the imported background image. 4 - trip traces.
+ * 5 - vehicle photographs.
  */
-const DB_VERSION = 3;
+const DB_VERSION = 5;
 
 export const AVATARS = 'avatars';
 export const TRIPS = 'trips';
 export const WALLPAPERS = 'wallpapers';
+export const TRACES = 'traces';
+export const PHOTOS = 'photos';
 
 /** Trip index by start date, to read them back newest first. */
 export const BY_START = 'startedAt';
@@ -42,6 +45,17 @@ function open(): Promise<IDBDatabase> {
 
       if (!db.objectStoreNames.contains(WALLPAPERS)) {
         db.createObjectStore(WALLPAPERS, { keyPath: 'id' });
+      }
+
+      // Keyed by the trip's own id: a trace has no life of its own, and is fetched only for the
+      // trip that owns it.
+      if (!db.objectStoreNames.contains(TRACES)) {
+        db.createObjectStore(TRACES, { keyPath: 'id' });
+      }
+
+      // Keyed by the vehicle's own id: a photograph belongs to one car and is fetched by it.
+      if (!db.objectStoreNames.contains(PHOTOS)) {
+        db.createObjectStore(PHOTOS, { keyPath: 'id' });
       }
     };
 

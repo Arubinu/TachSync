@@ -1,4 +1,10 @@
-import type { AvatarFrameState, AvatarInstance, AvatarMood, AvatarPalette } from '../types';
+import type {
+  AvatarFrameState,
+  AvatarInstance,
+  AvatarMood,
+  AvatarPalette,
+  AvatarPicking,
+} from '../types';
 
 /**
  * Glowing face in the style of an in-car display.
@@ -93,6 +99,14 @@ class NeonFace implements AvatarInstance {
   readonly #faceCluster: SVGGElement;
   readonly #bottomCluster: SVGGElement;
 
+  /**
+   * The objects the user may hide, and the nodes each is made of.
+   *
+   * Named by role rather than by shape: what one wants gone is "the panel", not "the six
+   * rectangles top right".
+   */
+  readonly #parts = new Map<string, SVGElement[]>();
+
   constructor(container: HTMLElement, palette: AvatarPalette) {
     this.#svg = element('svg', {
       viewBox: `0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}`,
@@ -145,6 +159,7 @@ class NeonFace implements AvatarInstance {
       group.append(tick);
     }
     this.#topCluster.append(group);
+    this.#parts.set('ticks', [group]);
     return group;
   }
 
@@ -183,6 +198,7 @@ class NeonFace implements AvatarInstance {
     this.#altNodes.push(arc);
     group.append(outer, arc);
     this.#topCluster.append(group);
+    this.#parts.set('dial', [group]);
     return arc;
   }
 
@@ -193,6 +209,7 @@ class NeonFace implements AvatarInstance {
     const fill = element('rect', { x: 54, y: 56, width: 3, height: 0, rx: 1.5 });
     this.#altNodes.push(fill);
     this.#topCluster.append(track, fill);
+    this.#parts.set('revBar', [track, fill]);
     return fill;
   }
 
@@ -223,6 +240,7 @@ class NeonFace implements AvatarInstance {
       group.append(line);
     }
     this.#topCluster.append(group);
+    this.#parts.set('panel', [group]);
   }
 
   /** Bars bottom left: they rise with throttle opening. */
@@ -235,6 +253,7 @@ class NeonFace implements AvatarInstance {
       group.append(bar);
     }
     this.#bottomCluster.append(group);
+    this.#parts.set('effortBars', [group]);
   }
 
   #buildBlushes(): void {
@@ -249,6 +268,7 @@ class NeonFace implements AvatarInstance {
       this.#blushes.push(blush);
       this.#faceCluster.append(blush);
     }
+    this.#parts.set('blush', [...this.#blushes]);
   }
 
   /**
@@ -290,7 +310,61 @@ class NeonFace implements AvatarInstance {
       this.#faceCluster.append(defs, group);
       this.#eyes.push({ lid, group, side });
     }
+    this.#parts.set('eyes', this.#eyes.map((eye) => eye.group));
   }
+
+  // --- picking -------------------------------------------------------
+
+  /*
+   * Hit-testing on painted boxes rather than on exact outlines.
+   *
+   * `getBoundingClientRect` reports a node after every transform its ancestors apply - and the
+   * clusters do translate, by an amount that follows the tile's aspect. Working in the SVG's own
+   * coordinates would mean undoing those transforms by hand for a result no more accurate.
+   *
+   * The smallest box wins rather than the topmost. Boxes nest here - the dial's ring encloses its
+   * arc - and drawing order would hand back the whole cluster wherever it happens to be painted
+   * last, which is never what the finger meant.
+   */
+  readonly picking: AvatarPicking = {
+    pick: (x, y) => {
+      const host = this.#svg.getBoundingClientRect();
+      const px = host.left + x;
+      const py = host.top + y;
+
+      let bestId: string | null = null;
+      let bestArea = Infinity;
+
+      for (const [id, nodes] of this.#parts) {
+        for (const node of nodes) {
+          const box = node.getBoundingClientRect();
+          // A hidden part reports an empty box: it cannot be picked, which is what lets the
+          // caller stop when nothing is under the finger.
+          if (box.width === 0 || box.height === 0) continue;
+          if (px < box.left || px > box.right || py < box.top || py > box.bottom) continue;
+
+          const area = box.width * box.height;
+          if (area >= bestArea) continue;
+          bestArea = area;
+          bestId = id;
+        }
+      }
+
+      return bestId;
+    },
+
+    parts: () => [...this.#parts.keys()],
+
+    setHidden: (ids) => {
+      for (const [id, nodes] of this.#parts) {
+        for (const node of nodes) {
+          // `display` rather than `opacity`: the animation writes attributes on these nodes every
+          // frame, and a part left in the layout would still answer the next pick.
+          node.style.display = ids.has(id) ? 'none' : '';
+        }
+      }
+    },
+  };
 
   // --- animation -----------------------------------------------------
 

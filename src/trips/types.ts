@@ -37,7 +37,22 @@ export interface TripRecord {
    */
   readonly meanEnergy: number | null;
   readonly meanHarshness: number | null;
-  /** Vehicle selected at the time of the trip, as it was displayed. */
+  /**
+   * Which vehicle, by id.
+   *
+   * `null` on trips written before this was stored, which have only the label below to go on.
+   *
+   * The label alone was the identity, and it was the wrong one twice over: renaming a vehicle
+   * orphaned its whole history, and an unnamed one is labelled from a TRANSLATED string, so
+   * switching the interface language split one car into two.
+   */
+  readonly vehicleId: string | null;
+  /**
+   * Vehicle name at the time of the trip, as it was displayed.
+   *
+   * Kept for display and for matching the trips that predate the id: a history shows the name the
+   * car had then, not the one it has now.
+   */
   readonly vehicle: string;
   /**
    * Where the frames came from.

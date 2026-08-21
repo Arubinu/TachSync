@@ -1,4 +1,5 @@
 import type { ProfileState } from './state';
+import { forgetPerson } from './layouts';
 import type { Appearance, Person, Vehicle } from './types';
 
 /**
@@ -73,7 +74,11 @@ export function deleteEntity(state: ProfileState, kind: ProfileKind, id: string)
   const next = { ...state, [kind]: remaining } as ProfileState;
 
   if (kind === 'people') {
-    return state.personId === id ? { ...next, personId: fallback.id } : next;
+    // Off every grid on the way out, and any grid left with nobody on it goes too. A membership
+    // naming someone who no longer exists would keep a board alive for a driver who is gone.
+    const vehicles = next.vehicles.map((vehicle) => forgetPerson(vehicle, id));
+    const cleaned = { ...next, vehicles };
+    return state.personId === id ? { ...cleaned, personId: fallback.id } : cleaned;
   }
   if (kind === 'vehicles') {
     return state.vehicleId === id ? { ...next, vehicleId: fallback.id } : next;

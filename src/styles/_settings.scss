@@ -51,27 +51,6 @@
     }
   }
 
-  &__back {
-    font: inherit;
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-    align-self: flex-start;
-    min-height: var(--control-h);
-    padding: 0 var(--sp-3) 0 var(--sp-2);
-    margin-bottom: var(--sp-3);
-    border: none;
-    border-radius: var(--r-md);
-    background: none;
-    color: var(--ui-text);
-    font-weight: var(--fw-semibold);
-    cursor: pointer;
-
-    &:hover {
-      background: color-mix(in srgb, var(--ui-text) 8%, transparent);
-    }
-  }
-
   // Real buttons, centred. As plain left-aligned text nothing said they were clickable: a list is
   // read, a button is actuated.
   &__item {
@@ -229,14 +208,6 @@
     gap: var(--sp-5);
     grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
     align-items: start;
-  }
-
-  // Right column: the short blocks, stacked.
-  &__stack {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-5);
-    min-width: 0;
   }
 
   &__group {
@@ -490,20 +461,6 @@
     flex: 1;
     text-align: center;
   }
-}
-
-// Report of an import or a backup, in the settings.
-//
-// The catalogue replaced its own with a transient tooltip. Here the framed block keeps its meaning:
-// the panel stays open after the operation, and the report must be re-readable.
-.report {
-  font-size: 0.82rem;
-  line-height: 1.5;
-  color: var(--ui-text);
-  background: color-mix(in srgb, var(--ui-accent) 12%, transparent);
-  border: 1px solid var(--ui-border);
-  border-radius: var(--r-sm);
-  padding: 0.6rem 0.8rem;
 }
 
 // An identity section: the name, the lists, the actions at the foot. Blocks separate as everywhere

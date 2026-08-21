@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "start": "npm run dev",
-    "dev": "vite --host",
+    "start": "node scripts/serve.mjs --host",
+    "dev": "node scripts/serve.mjs --host",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview --host",
+    "preview": "node scripts/serve.mjs preview --host",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

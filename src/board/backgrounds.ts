@@ -48,8 +48,19 @@ export function resolveBackground(
 
   if (id === null) return { theme: fallback, imported: null, wallpaper: false };
 
+  /*
+   * An imported image has no theme, so it falls back like every other background that has none.
+   *
+   * It used to take `settings.themeId`, meaning to keep the look's palette. But that field is also
+   * where the CATALOGUE stores the theme it was last filtered by - so with an image as background,
+   * filtering tiles repainted the whole board. Measured: the accent went from #22d3ee to #4ade80
+   * on a change that was supposed to touch a list.
+   *
+   * That is exactly what the rule above exists to prevent: the reference theme comes from the
+   * background, and a background with no theme of its own gets the fallback. No exception.
+   */
   if (id === WALLPAPER_ID) {
-    return { theme: findTheme(settings.themeId), imported: null, wallpaper: hasWallpaper };
+    return { theme: fallback, imported: null, wallpaper: hasWallpaper };
   }
 
   if (id.startsWith(THEME_PREFIX)) {

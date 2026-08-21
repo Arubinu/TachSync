@@ -49,9 +49,15 @@ npm run dev
 | `npm run dev` | server di sviluppo |
 | `npm run build` | verifica dei tipi, poi compilazione |
 | `npm test` | la suite di test |
-| `npm run android:apk` | compila l'APK Android |
-| `npm run android:install` | compila e installa su un dispositivo collegato |
+| `npm run android:sync` | compila, poi ricopia il risultato nel progetto Android |
+| `npm run android:apk` | compila l'APK a partire dall'ultima sincronizzazione |
+| `npm run android:install` | sincronizza, compila e installa su un dispositivo collegato |
 | `npm run clean` | elimina tutto il generato (`clean:all`: anche `node_modules`) |
+
+L'APK finisce in `android/app/build/outputs/apk/debug/app-debug.apk`. Esegui `android:sync` prima di
+`android:apk`: `npm run build` da solo riempie `dist/` e non scrive nulla sotto `android/`, quindi
+Gradle impacchetterebbe la compilazione web precedente, o fallirebbe del tutto dopo un `clean`, che
+elimina i sorgenti Gradle generati insieme al resto.
 
 L'applicazione Android richiede l'SDK Android e due JDK; vedi
 `android/gradle.properties`, dove è spiegato il motivo.

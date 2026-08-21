@@ -62,12 +62,19 @@ describe('choosing the image as the background', () => {
     expect(resolved.theme).not.toBeNull();
   });
 
-  it('keeps the look own theme as the reference', () => {
-    // A photograph says nothing about what colour a gauge should be. Were it to fall back to the
-    // first theme in the catalogue, importing a background would repaint every tile with it.
-    const settings = { ...chosen, themeId: 'neon-miami' };
+  it('never lets the catalogue filter decide the board palette', () => {
+    /*
+     * `settings.themeId` is where the CATALOGUE stores what it was last filtered by. Reading it
+     * here meant that filtering a list of tiles repainted every tile on the board - measured, the
+     * accent moved from #22d3ee to #4ade80.
+     *
+     * A photograph carries no theme, so it takes the fallback like any other background that
+     * carries none. What matters is that the answer does not move with the filter.
+     */
+    const filtered = resolveBackground({ ...chosen, themeId: 'phosphor' }, true);
+    const otherwise = resolveBackground({ ...chosen, themeId: 'rally' }, true);
 
-    expect(resolveBackground(settings, true).theme.id).toBe('neon-miami');
+    expect(filtered.theme.id).toBe(otherwise.theme.id);
   });
 
   it('leaves every other kind of background alone', () => {

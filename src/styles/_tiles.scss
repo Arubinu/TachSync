@@ -41,8 +41,10 @@
   // The rim is what makes a translucent panel read as a surface catching light
   // rather than as a hole cut in the background.
   box-shadow: var(--rim);
+  // No `-webkit-` twin, deliberately: with both present the minifier keeps only the prefixed one,
+  // which Chrome ignores when the value carries a `var()`. Measured - every tile lost its blur in
+  // the build while `npm run dev` showed it.
   backdrop-filter: blur(var(--tile-blur));
-  -webkit-backdrop-filter: blur(var(--tile-blur));
   // Bevelled top-left and bottom-right: the technical HUD look. A theme cancels
   // it by setting the variable to 0.
   clip-path: polygon(
@@ -62,6 +64,10 @@
 // behind the character with no rectangular cut-out.
 .tile--bare {
   display: flex;
+  // Down the tile, like the grid it replaces. Left to default the box lays out in a ROW and the
+  // caption sits beside the avatar: `.is-spread` gives up its height, which reclaims nothing
+  // horizontally. Measured - the stage started 11.5% in, and the avatar looked off centre.
+  flex-direction: column;
   background: none;
   border: none;
   box-shadow: none;
@@ -489,43 +495,77 @@
 }
 
 // Edge feathering.
-//
-// The fill no longer stops dead: it fades out towards all four sides. Two crossed gradients as a
-// mask rather than one radial, which would hollow the corners well before the side midpoints and
-// give an oval blot.
-//
-// The mask applies to a separate layer, not the tile: applied to the tile it would erase the text
-// along with the fill.
+/*
+ * Edge feathering: the fill fades INWARD, gone before the tile's own boundary. Nothing then has to
+ * follow the outline, so a bevel, a rounded rectangle and a stadium all come out the same.
+ *
+ * Two dead ends worth not repeating. Fading outward needs a layer larger than the tile, which
+ * cannot be clipped by it and so had to cut itself the same way - one shape over another went
+ * wrong wherever the two disagreed. A radial mask inscribes an ellipse in the box: it replaced the
+ * theme's shape instead of fading it, and a square theme came out round.
+ *
+ * On a separate layer, never the tile: on the tile the mask would erase the text with the fill.
+ */
 .tile[data-chrome='feathered'] {
   background: none;
   box-shadow: none;
+
+  // Only the layer beneath filters. A backdrop filter is clipped to the box that asks for it, so
+  // the tile's own ended dead on its edge whatever the layer faded - that rim was all one saw.
+  backdrop-filter: none;
+
   // The layer sits behind the content via a negative `z-index`, which only means anything inside a
   // stacking context; without one it would fall behind the board itself and disappear.
   isolation: isolate;
 
+  // How far in the fade reaches. Short on purpose: an edge one cannot find, not a vignette. On the
+  // tile rather than the layer, so the per-side lengths below can be read from either.
+  --feather: 8px;
+
+  // Once per side, so the flush rules can zero one instead of rewriting the mask: a side meeting
+  // the screen edge asks for continuity, and fading it would hollow the tile against that edge.
+  --feather-top: var(--feather);
+  --feather-right: var(--feather);
+  --feather-bottom: var(--feather);
+  --feather-left: var(--feather);
+
   &::before {
     content: '';
     position: absolute;
+    // Exactly the tile, no more: the fade is inward, so nothing has to reach outside.
     inset: 0;
     z-index: -1;
+    /*
+     * The theme's shape, worn by the layer.
+     *
+     * The tile paints nothing itself under this dressing, so whatever shape the theme gives - a
+     * bevel here, a stadium there - has to be carried by the only thing that does paint. Dropped,
+     * every theme came out a plain rectangle.
+     */
     border-radius: inherit;
+    clip-path: inherit;
     background: var(--tile-bg);
     backdrop-filter: blur(var(--tile-blur));
-    -webkit-backdrop-filter: blur(var(--tile-blur));
-    --feather: 22%;
+
+    /*
+     * Two crossed bands, each fading its own pair of sides.
+     *
+     * They reach zero on all four edges of the box, so the fill dissolves everywhere along the
+     * boundary - corners included, where the two bands multiply and it goes sooner still.
+     */
     mask-image:
       linear-gradient(
         to right,
         transparent 0,
-        #000 var(--feather),
-        #000 calc(100% - var(--feather)),
+        #000 var(--feather-left),
+        #000 calc(100% - var(--feather-right)),
         transparent 100%
       ),
       linear-gradient(
         to bottom,
         transparent 0,
-        #000 var(--feather),
-        #000 calc(100% - var(--feather)),
+        #000 var(--feather-top),
+        #000 calc(100% - var(--feather-bottom)),
         transparent 100%
       );
     mask-composite: intersect;
@@ -533,32 +573,22 @@
   }
 }
 
-// Feathering does not apply to a side that meets the screen edge.
-//
-// Fading the fill against the edge would hollow it out, where flush contact asks for continuity.
-// The gradient on that side starts fully opaque.
-.tile[data-chrome='feathered'][data-flush~='left']::before {
-  mask-image:
-    linear-gradient(to right, #000 0, #000 calc(100% - var(--feather)), transparent 100%),
-    linear-gradient(
-      to bottom,
-      transparent 0,
-      #000 var(--feather),
-      #000 calc(100% - var(--feather)),
-      transparent 100%
-    );
+// Feathering does not apply to a side that meets the screen edge: fading the fill against it would
+// hollow the tile out, where flush contact asks for continuity.
+.tile[data-chrome='feathered'][data-flush~='top'] {
+  --feather-top: 0px;
 }
 
-.tile[data-chrome='feathered'][data-flush~='right']::before {
-  mask-image:
-    linear-gradient(to right, transparent 0, #000 var(--feather), #000 100%),
-    linear-gradient(
-      to bottom,
-      transparent 0,
-      #000 var(--feather),
-      #000 calc(100% - var(--feather)),
-      transparent 100%
-    );
+.tile[data-chrome='feathered'][data-flush~='right'] {
+  --feather-right: 0px;
+}
+
+.tile[data-chrome='feathered'][data-flush~='bottom'] {
+  --feather-bottom: 0px;
+}
+
+.tile[data-chrome='feathered'][data-flush~='left'] {
+  --feather-left: 0px;
 }
 
 // The two quiet states of a caption.
@@ -614,3 +644,4 @@
   // circle can have instead.
   grid-row: 2 / -1;
 }
+

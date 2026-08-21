@@ -88,20 +88,6 @@
     background 0.16s ease,
     border-color 0.16s ease;
 
-  &--active {
-    color: var(--ui-on-accent);
-    background: var(--accent);
-    border-color: var(--accent);
-    font-weight: 600;
-  }
-
-  // Metric the connected vehicle lacks: flagged, yet still selectable — showing
-  // it or not is the driver's call.
-  &--unavailable {
-    opacity: 0.55;
-    border-style: dashed;
-  }
-
   &--danger {
     color: var(--danger);
     border-color: color-mix(in srgb, var(--danger) 50%, transparent);
@@ -116,16 +102,6 @@
     align-items: center;
     font-size: 0.9rem;
     min-height: var(--control-h);
-  }
-
-  &__count {
-    margin-left: 0.45rem;
-    font-variant-numeric: tabular-nums;
-    font-size: 0.72em;
-    opacity: 0.8;
-    padding: 0.05rem 0.35rem;
-    border-radius: var(--r-full);
-    background: rgba(255, 255, 255, 0.16);
   }
 
   &--active &__count {
@@ -381,4 +357,19 @@
   .tip {
     animation-duration: 1ms;
   }
+}
+
+// A person's face: the interface icons' hand, at the size a button in a car needs.
+//
+// Stroke and weight are theirs; only the box grows. Drawing these at 24 px would have made a
+// beetle and a long-necked dinosaur into the same smudge - measured on the sheet before any of
+// them reached the application.
+.face {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }

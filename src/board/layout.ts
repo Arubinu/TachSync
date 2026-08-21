@@ -75,6 +75,51 @@ export function normalizeCaption(raw: unknown): TileCaption {
   return TILE_CAPTIONS.includes(raw as TileCaption) ? (raw as TileCaption) : DEFAULT_CAPTION;
 }
 
+/**
+ * Where a tile's label and figure sit across its width.
+ *
+ * `null` means the theme's own, which is not a fourth alignment but the absence of a choice: the
+ * `centered` arrangement exists for round tiles, where left-aligned text floats against a curve and
+ * reads as a template error. Defaulting every tile to `left` would have undone that everywhere.
+ */
+export const TILE_ALIGNS = ['left', 'center', 'right'] as const;
+export type TileAlign = (typeof TILE_ALIGNS)[number];
+
+export function normalizeAlign(raw: unknown): TileAlign | null {
+  return TILE_ALIGNS.includes(raw as TileAlign) ? (raw as TileAlign) : null;
+}
+
+/**
+ * Next alignment, passing through the theme's own.
+ *
+ * A cycle rather than three buttons: it has few states, all of them visible on the icon, and it
+ * sits in a header where there is room for one control and not for four.
+ */
+export function stepAlign(current: TileAlign | null): TileAlign | null {
+  if (current === null) return 'left';
+  const next = TILE_ALIGNS[TILE_ALIGNS.indexOf(current) + 1];
+  return next ?? null;
+}
+
+/**
+ * The variables an explicit alignment overrides. Empty when the tile defers to the theme.
+ *
+ * Inline, like the theme's own. A stylesheet rule on `[data-align]` cannot win here: the
+ * arrangement writes `--tile-text-align` INLINE on every tile, and an inline declaration outranks
+ * any selector. Measured - the attribute changed, the text did not move.
+ *
+ * `data-align` is still published, so an imported pack can range its own dressing to match.
+ */
+export function alignVariables(align: TileAlign | null): Record<string, string> {
+  if (align === null) return {};
+
+  return {
+    '--tile-text-align': align,
+    '--tile-value-justify':
+      align === 'left' ? 'flex-start' : align === 'right' ? 'flex-end' : 'center',
+  };
+}
+
 export const TILE_CHROMES = ['default', 'borderless', 'unfilled', 'feathered', 'bare'] as const;
 export type TileChrome = (typeof TILE_CHROMES)[number];
 
@@ -110,19 +155,35 @@ export const DEFAULT_FLUSH: FlushSettings = {
  */
 /** Bounds for per-tile spacing, in pixels. */
 export const SPACING_MAX = 32;
+/**
+ * How far a tile may spill over its neighbours.
+ *
+ * A negative margin makes the tile larger than the cell it was given, which is the only way to let
+ * one overlap another - a dial breaking out of its square, a decor running under the tile beside
+ * it. Bounded well short of a whole cell: past that a tile covers a neighbour entirely and there is
+ * no longer any way to reach what is underneath.
+ *
+ * WHICH tile ends up on top is the layer's business, not this one's. Two tiles of the same layer
+ * are painted in the order they are placed.
+ */
+export const SPACING_MIN = -16;
 export const SPACING_STEP = 2;
 
 /**
- * Next spacing value, wrapping through the theme's own.
+ * Next spacing value, passing through the theme's own on the way.
  *
- * Going below zero does not give a negative margin but hands control back to the theme - the only
- * way to return to the default without an extra control.
+ * The ladder runs 32 … 2, 0, theme, -2 … -16, so the default sits between the last positive step
+ * and the first negative one. It is reachable from either side and costs no second control, which
+ * a value that had to be cleared some other way would have.
  */
 export function stepSpacing(current: number | null, delta: number): number | null {
-  if (current === null) return delta > 0 ? 0 : null;
+  if (current === null) return delta > 0 ? 0 : -SPACING_STEP;
+
   const next = current + delta * SPACING_STEP;
-  if (next < 0) return null;
-  return Math.min(SPACING_MAX, next);
+  // Coming back to zero from either side lands on the theme's value, never skips it.
+  if ((current === 0 && delta < 0) || (current === -SPACING_STEP && delta > 0)) return null;
+
+  return Math.min(SPACING_MAX, Math.max(SPACING_MIN, next));
 }
 
 /** Coerces a setting read from a file back to known values, side by side. */
@@ -150,6 +211,17 @@ export function flushEdges(tile: TileConfig, columns: number, rows: number): str
     const mode = tile.flush[side];
     return mode === 'force' || (mode === 'auto' && touches[side]);
   }).join(' ');
+}
+
+/**
+ * Edges a tile carries when it is not on the grid.
+ *
+ * A tile being dragged touches nothing: `auto` describes contact with a board it has left, so only
+ * a side deliberately forced still means anything. Without this a tile picked up from the top row
+ * would keep grafting onto an edge it is no longer against.
+ */
+export function forcedEdges(tile: TileConfig): string {
+  return FLUSH_SIDES.filter((side) => tile.flush[side] === 'force').join(' ');
 }
 
 export interface TileConfig {
@@ -191,6 +263,8 @@ export interface TileConfig {
    * tile.
    */
   readonly chrome: TileChrome;
+  /** Where the label and figure sit across the tile. `null` defers to the theme. */
+  readonly align: TileAlign | null;
   /** Whether the caption shows, hides, or gives up its room. */
   readonly caption: TileCaption;
   /**
@@ -327,6 +401,17 @@ export interface AppSettings {
   readonly backgroundId: string | null;
   /** Avatar shown by tiles of type `avatar`. */
   readonly avatarId: string;
+  /**
+   * Objects hidden on each avatar, by avatar id then object id.
+   *
+   * Kept per avatar rather than as one list: the ids belong to a particular drawing, and a list
+   * shared between them would hide a plush's ear the day a face declared a part by the same name.
+   * It also means switching avatar and back finds the same choices again.
+   *
+   * Most avatars appear nowhere in here, which is the point - an entry is written only once
+   * something has actually been hidden.
+   */
+  readonly hiddenAvatarParts: Readonly<Record<string, readonly string[]>>;
   /** Font multiplier applied to every tile. */
   readonly fontScale: number;
   /**
@@ -559,6 +644,7 @@ export function createTileAt(layer: LayerIndex, colStart: number, rowStart: numb
     flush: DEFAULT_FLUSH,
     spacing: null,
     chrome: DEFAULT_CHROME,
+    align: null,
     caption: DEFAULT_CAPTION,
     metrics: [],
   };
@@ -581,6 +667,7 @@ const base = {
   flush: DEFAULT_FLUSH,
   spacing: null,
   chrome: DEFAULT_CHROME,
+  align: null,
   caption: DEFAULT_CAPTION,
 } as const;
 
@@ -658,6 +745,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   backgrounds: [],
   backgroundId: null,
   avatarId: DEFAULT_AVATAR_ID,
+  hiddenAvatarParts: {},
   fontScale: 1,
   termsAccepted: false,
   useTripHistory: false,
@@ -1000,6 +1088,7 @@ function normalizeLayout(
     flush: normalizeFlush(tile.flush),
     spacing: typeof tile.spacing === 'number' ? tile.spacing : null,
     chrome: normalizeChrome(tile.chrome),
+    align: normalizeAlign(tile.align),
     // Absent from any tile placed before the setting existed, and `show` is what it did.
     caption: normalizeCaption(tile.caption),
     metrics: tile.metrics ?? [],
@@ -1049,6 +1138,28 @@ export function normalizeLayouts(parsed: StoredLayouts): LayoutsByOrientation {
 }
 
 /**
+ * Keeps only what reads as "avatar id, then a list of object ids".
+ *
+ * This map comes back from a file as often as from storage, and it is the one place a hostile or
+ * merely stale document could put anything at all. An entry that is not a list of strings is
+ * dropped rather than repaired: a half-understood entry would hide the wrong pieces, and there is
+ * nothing to lose in showing an avatar whole.
+ *
+ * Empty lists are dropped too, so the stored map holds only avatars actually altered.
+ */
+function normalizeHiddenParts(parsed: unknown): Readonly<Record<string, readonly string[]>> {
+  if (typeof parsed !== 'object' || parsed === null) return {};
+
+  const kept: Record<string, readonly string[]> = {};
+  for (const [avatarId, parts] of Object.entries(parsed)) {
+    if (!Array.isArray(parts)) continue;
+    const ids = parts.filter((part): part is string => typeof part === 'string');
+    if (ids.length > 0) kept[avatarId] = ids;
+  }
+  return kept;
+}
+
+/**
  * Completes a partial settings object.
  *
  * Shared by local loading and file import: both ingest data written elsewhere - an earlier version
@@ -1062,6 +1173,7 @@ export function normalizeSettings(parsed: Partial<AppSettings>): AppSettings {
     backgrounds: parsed.backgrounds ?? DEFAULT_SETTINGS.backgrounds,
     backgroundId: parsed.backgroundId ?? DEFAULT_SETTINGS.backgroundId,
     avatarId: parsed.avatarId ?? DEFAULT_SETTINGS.avatarId,
+    hiddenAvatarParts: normalizeHiddenParts(parsed.hiddenAvatarParts),
     fontScale: parsed.fontScale ?? DEFAULT_SETTINGS.fontScale,
     // Only a literal `true` counts: nothing else is an answer.
     termsAccepted: parsed.termsAccepted === true,

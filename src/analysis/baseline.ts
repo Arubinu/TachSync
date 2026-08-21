@@ -1,3 +1,4 @@
+import { isTripOf, type VehicleIdentity } from '../trips/identity';
 import type { TripRecord } from '../trips/types';
 
 /**
@@ -58,9 +59,12 @@ export interface Baseline {
  * where it drags no median. Trips with no style recorded - every one from before it was kept - are
  * skipped rather than counted as zero.
  */
-export function readBaseline(trips: readonly TripRecord[], vehicle: string): Baseline | null {
+export function readBaseline(
+  trips: readonly TripRecord[],
+  vehicle: VehicleIdentity,
+): Baseline | null {
   const levels = trips
-    .filter((trip) => trip.vehicle === vehicle && trip.meanEnergy !== null)
+    .filter((trip) => isTripOf(trip, vehicle) && trip.meanEnergy !== null)
     .map((trip) => trip.meanEnergy as number);
 
   if (levels.length < MIN_TRIPS) return null;

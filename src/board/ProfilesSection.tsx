@@ -1,4 +1,7 @@
-import { useTranslation } from '../i18n';
+import { useState } from 'react';
+import { format, useTranslation } from '../i18n';
+import { joinLayout, layoutFor, splitLayout } from '../profiles/layouts';
+import type { Vehicle } from '../profiles/types';
 import { SelectField, type PickerRequest } from './Picker';
 import { stepRange } from '../profiles/types';
 import {
@@ -128,6 +131,8 @@ export function ProfilesSection({
           </div>
         )}
 
+        {kind === 'vehicles' && <GridSharing state={state} onChange={onChange} />}
+
         {/*
           Renaming sits beside duplicating and deleting deliberately: all three act on the entity
           chosen just above and form the block of what can be done to it. At the top, the field
@@ -223,4 +228,93 @@ function stepVehicleRange(
       item.id === vehicle.id ? { ...item, ranges: stepRange(item.ranges, key, direction) } : item,
     ),
   };
+}
+
+/**
+ * Who drives this car with which grid.
+ *
+ * A row that unfolds, like a trip: the list is rarely wanted and would otherwise sit between the
+ * gauge scales and the name field on every visit to the section.
+ *
+ * Sharing is joining a grid, not copying one. Two people on the same entry hold the same object, so
+ * a tile moved by one has moved for the other - there is nothing to keep in step because nothing
+ * was duplicated.
+ */
+function GridSharing({
+  state,
+  onChange,
+}: {
+  readonly state: ProfileState;
+  readonly onChange: (next: ProfileState) => void;
+}): React.JSX.Element {
+  const t = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  const vehicle = activeVehicle(state);
+  const mine = layoutFor(vehicle, state.personId);
+
+  /** A grid's drivers, named as the rest of the interface names them. */
+  const drivers = (people: readonly string[]): string =>
+    people
+      .map((id) => {
+        const index = state.people.findIndex((person) => person.id === id);
+        const person = state.people[index];
+        return person === undefined ? null : entityLabel(person, index, t.settings.person);
+      })
+      .filter((name): name is string => name !== null)
+      .join(', ');
+
+  const update = (next: Vehicle): void =>
+    onChange({
+      ...state,
+      vehicles: state.vehicles.map((item) => (item.id === next.id ? next : item)),
+    });
+
+  return (
+    <div className="grids">
+      <button type="button" className="grids__toggle" onClick={() => setOpen(!open)}>
+        <span>{t.settings.grids}</span>
+        <span className="grids__count">
+          {format(t.settings.gridCount, { count: vehicle.layouts.length })}
+        </span>
+      </button>
+
+      {open && (
+        <ul className="grids__list">
+          {vehicle.layouts.map((layout) => {
+            const ours = layout.id === mine.id;
+            const named = drivers(layout.people);
+
+            return (
+              <li key={layout.id} className={ours ? 'grids__item is-mine' : 'grids__item'}>
+                <span className="grids__who">{named === '' ? t.settings.gridEmpty : named}</span>
+
+                {ours ? (
+                  // Only worth offering while somebody else is on it: alone, there is nothing to
+                  // separate from.
+                  layout.people.length > 1 && (
+                    <button
+                      type="button"
+                      className="chip"
+                      onClick={() => update(splitLayout(vehicle, state.personId))}
+                    >
+                      {t.settings.splitGrid}
+                    </button>
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    className="chip"
+                    onClick={() => update(joinLayout(vehicle, state.personId, layout.id))}
+                  >
+                    {t.settings.joinGrid}
+                  </button>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
 }

@@ -5,11 +5,12 @@ import { LayoutPicker } from './LayoutPicker';
 import { TileContent } from './tiles';
 import { useDemoStore } from './useDemoStore';
 import { useTileVariables } from './tileVariables';
-import { findTheme, themeToTileVariables } from '../theme/themes';
-import { LayersIcon } from './icons';
+import { findTheme, themeToTileVariables, type ThemeManifest } from '../theme/themes';
+import { AlignIcon, LayersIcon, MirrorIcon } from './icons';
 import { Modal } from './Modal';
 import { Tip } from './Tip';
 import {
+  alignVariables,
   clampFontScale,
   FLUSH_SIDES,
   DEFAULT_CAPTION,
@@ -24,6 +25,8 @@ import {
   LAYER_KEYS,
   LAYERS,
   SPACING_MAX,
+  stepAlign,
+  SPACING_MIN,
   stepSpacing,
   type FlushMode,
   type FlushSide,
@@ -35,6 +38,15 @@ import {
 
 export interface TileEditorProps {
   readonly tile: TileConfig;
+  /**
+   * The board's theme, for a tile that has none of its own.
+   *
+   * `null` on a tile means "the board's", and the board's is the one the chosen background names.
+   * Resolved here rather than looked up, because this window knows nothing of backgrounds.
+   */
+  readonly theme: ThemeManifest;
+  /** The avatar actually on screen. An `avatar` tile previewing another one previews nothing. */
+  readonly avatarId: string;
   /** Tile name: its preset's, or the list of its metrics. */
   readonly title: string;
   readonly columns: number;
@@ -61,6 +73,8 @@ export interface TileEditorProps {
 export function TileEditor({
   tile,
   title,
+  theme,
+  avatarId,
   columns,
   rows,
   availableChannels,
@@ -111,8 +125,115 @@ export function TileEditor({
     onChange({ ...tile, fontScale: clampFontScale(tile.fontScale + delta * FONT_SCALE_STEP) });
   }
 
+  /*
+   * Which half of the editor is on screen.
+   *
+   * Measured on a 390x844 phone: the footprint picker alone took 95% of the visible body, and every
+   * option sat below the fold - the picker keeps the board's real proportions, and a portrait board
+   * makes it taller than the window. Two panels give each what it needs instead of making one wait
+   * behind the other.
+   *
+   * Opens on the footprint: it is what the tile was tapped to change most often, and it is the one
+   * part that cannot be reached from anywhere else.
+   */
+  const [tab, setTab] = useState<'size' | 'options'>('size');
+
   return (
-    <Modal title={title} onClose={onClose} onDelete={onDelete}>
+    <Modal
+      title={title}
+      onClose={onClose}
+      onDelete={onDelete}
+      /*
+       * Mirroring, beside the close button rather than as a section of its own.
+       *
+       * It has two states and no measure: a pair of chips under a heading spent a third of the
+       * window saying what one pressed icon says. Only an avatar has a side to face, so only an
+       * avatar carries it.
+       */
+      /*
+       * One control, cycling. Alignment has three states and a fourth that is the absence of one,
+       * all of them drawn on the icon: a row of four buttons would have said the same thing with
+       * four times the header.
+       *
+       * Never on an avatar - it has no label and no figure to range, and its own control lives in
+       * this exact spot.
+       */
+      trailing={
+        primary === 'avatar'
+          ? [
+              <button
+                key="mirror"
+                type="button"
+                className={tile.mirrored ? 'modal__action is-active' : 'modal__action'}
+                onClick={() => onChange({ ...tile, mirrored: !tile.mirrored })}
+                aria-pressed={tile.mirrored}
+                aria-label={t.editor.mirrored}
+                title={t.editor.mirrored}
+              >
+                <MirrorIcon />
+              </button>,
+            ]
+          : [
+              <button
+                key="align"
+                type="button"
+                className={tile.align === null ? 'modal__action' : 'modal__action is-active'}
+                onClick={() => onChange({ ...tile, align: stepAlign(tile.align) })}
+                aria-label={`${t.editor.align} : ${
+                  tile.align === 'left'
+                    ? t.editor.alignLeft
+                    : tile.align === 'center'
+                      ? t.editor.alignCenter
+                      : tile.align === 'right'
+                        ? t.editor.alignRight
+                        : t.editor.spacingAuto
+                }`}
+                title={t.editor.align}
+              >
+                <AlignIcon align={tile.align} />
+              </button>,
+            ]
+      }
+    >
+      {/*
+        Two tabs rather than one long window.
+
+        Both panels stay mounted and are only hidden: the footprint panel carries a live preview,
+        which mounts a rendering engine and, for an avatar, reads a file. Unmounting it on every
+        switch would reload that for nothing, and lose the mood it had built up.
+      */}
+      <div className="editor__tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          id="tile-tab-size"
+          aria-controls="tile-panel-size"
+          aria-selected={tab === 'size'}
+          className={tab === 'size' ? 'editor__tab is-active' : 'editor__tab'}
+          onClick={() => setTab('size')}
+        >
+          {t.editor.tabSize}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tile-tab-options"
+          aria-controls="tile-panel-options"
+          aria-selected={tab === 'options'}
+          className={tab === 'options' ? 'editor__tab is-active' : 'editor__tab'}
+          onClick={() => setTab('options')}
+        >
+          {t.editor.tabOptions}
+        </button>
+      </div>
+
+      <div
+        className="editor__panel"
+        role="tabpanel"
+        id="tile-panel-size"
+        aria-labelledby="tile-tab-size"
+        hidden={tab !== 'size'}
+      >
       <div className="modal__columns">
         <section className="modal__column">
           {/*
@@ -142,7 +263,16 @@ export function TileEditor({
               }
               onChange({ ...tile, colSpan, rowSpan });
             }}
-            preview={<TilePreview tile={tile} preset={preset} columns={columns} rows={rows} />}
+            preview={
+              <TilePreview
+                tile={tile}
+                preset={preset}
+                board={theme}
+                avatarId={avatarId}
+                columns={columns}
+                rows={rows}
+              />
+            }
           />
 
         </section>
@@ -152,29 +282,16 @@ export function TileEditor({
           its track and left the picker at half the window width - and it is precisely the room
           given to the cells that makes them reachable by finger.
         */}
-        {primary === 'avatar' && (
-          <section className="modal__column modal__column--centered">
-              <h3>{t.editor.orientation}</h3>
-              <div className="modal__choices">
-                <button
-                  type="button"
-                  className={tile.mirrored ? 'chip' : 'chip chip--active'}
-                  onClick={() => onChange({ ...tile, mirrored: false })}
-                >
-                  {t.editor.normal}
-                </button>
-                <button
-                  type="button"
-                  className={tile.mirrored ? 'chip chip--active' : 'chip'}
-                  onClick={() => onChange({ ...tile, mirrored: true })}
-                >
-                  {t.editor.mirrored}
-                </button>
-              </div>
-          </section>
-        )}
+      </div>
       </div>
 
+      <div
+        className="editor__panel"
+        role="tabpanel"
+        id="tile-panel-options"
+        aria-labelledby="tile-tab-options"
+        hidden={tab !== 'options'}
+      >
       {/*
         The two steppers, at either end of a row of their own. Stacked in a column they overflowed;
         side by side they ask for more than half the window. Full width they answer each other, and
@@ -210,7 +327,7 @@ export function TileEditor({
             <button
               type="button"
               onClick={() => onChange({ ...tile, spacing: stepSpacing(tile.spacing, -1) })}
-              disabled={tile.spacing === null}
+              disabled={tile.spacing !== null && tile.spacing <= SPACING_MIN}
               aria-label={t.editor.decrease}
             >
               −
@@ -306,6 +423,8 @@ export function TileEditor({
           ))}
         </div>
       </section>
+      </div>
+
       {/*
         At the foot of the window, like every tooltip: placing it near the gesture seemed more apt,
         but a bubble appearing in a different place depending on what was just done has to be
@@ -327,19 +446,31 @@ export function TileEditor({
 function TilePreview({
   tile,
   preset,
+  board,
+  avatarId,
   columns,
   rows,
 }: {
   readonly tile: TileConfig;
   readonly preset: TilePreset | null;
+  readonly board: ThemeManifest;
+  readonly avatarId: string;
   readonly columns: number;
   readonly rows: number;
 }): React.JSX.Element {
   const store = useDemoStore();
-  const theme = findTheme(tile.themeId ?? '');
+  /*
+   * The tile's own theme, or the board's - never the catalogue's first.
+   *
+   * `findTheme('')` finds nothing and falls back to Neon Miami, so a tile deferring to the board
+   * was previewed in whatever theme happens to lead the list. A tile carrying its own was right,
+   * which is why the bug looked like it had an exception.
+   */
+  const theme = tile.themeId === null ? board : findTheme(tile.themeId);
   const setVariables = useTileVariables(store, tile.metrics);
 
   return (
+    <div className="layout-picker__frame">
     <div
       // The same markers as on the board, and for the same reason: they are what the stylesheet and
       // imported dressings read. A preview without them would show a different tile from the one
@@ -348,12 +479,14 @@ function TilePreview({
       ref={setVariables}
       data-flush={flushEdges(tile, columns, rows)}
       data-chrome={tile.chrome}
+      {...(tile.align === null ? {} : { 'data-align': tile.align })}
       data-caption={tile.caption}
       {...(tile.presetId === null ? {} : { 'data-preset': tile.presetId })}
       {...(tile.spacing === null ? {} : { 'data-spacing': tile.spacing })}
       style={
         {
           ...themeToTileVariables(theme),
+          ...alignVariables(tile.align),
           '--tile-font-scale': tile.fontScale,
           ...(tile.spacing === null ? {} : { '--tile-spacing': `${tile.spacing}px` }),
         } as React.CSSProperties
@@ -362,11 +495,12 @@ function TilePreview({
       <TileContent
         tile={tile}
         store={store}
-        avatarId=""
+        avatarId={avatarId}
         palette={{ accent: theme.colors.accent, accentAlt: theme.colors.accentAlt }}
         template={preset?.layout ?? null}
         gauge={theme.tile.gauge}
       />
+    </div>
     </div>
   );
 }

@@ -49,9 +49,31 @@ npm run dev
 | `npm run dev` | development server |
 | `npm run build` | type check, then build |
 | `npm test` | the test suite |
-| `npm run android:apk` | build the Android APK |
-| `npm run android:install` | build and install on a connected device |
+| `npm run android:sync` | build, then copy the result into the Android project |
+| `npm run android:apk` | build the APK from whatever was last synced |
+| `npm run android:install` | sync, build and install on a connected device |
 | `npm run clean` | remove everything generated (`clean:all`: `node_modules` too) |
+
+Reached through a reverse proxy, the dev and preview servers answer `Blocked request`: they refuse
+a `Host` header they do not recognise, which is what stops another site from pointing a name it owns
+at your machine and reading what is served. Name the proxy in `.env.local`, which git ignores and
+`npm run clean` spares:
+
+```ini
+ALLOWED_HOSTS=board.example.lan
+ALLOWED_HOSTS=.example.lan          # a leading dot covers the subdomains
+ALLOWED_HOSTS=a.lan,b.lan           # several at once
+ALLOWED_HOSTS=any                   # every name, protection off
+```
+
+Then start the server as usual — no argument to remember, and nothing shell-dependent. `scripts/serve.mjs`
+also accepts `npm start -- --allow-host=…`, but PowerShell swallows the `--` before npm ever sees it,
+so the file is the reliable way.
+
+The APK lands in `android/app/build/outputs/apk/debug/app-debug.apk`. Run `android:sync` before
+`android:apk`: `npm run build` alone fills `dist/` and writes nothing under `android/`, so Gradle
+would package the previous web build — or fail outright after a `clean`, which removes the generated
+Gradle sources along with the rest.
 
 The Android app needs the Android SDK and two JDKs; see
 `android/gradle.properties`, which explains why.

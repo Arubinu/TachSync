@@ -10,6 +10,8 @@ import type { ProfileKind } from '../profiles/actions';
 import type { Appearance, Person, Vehicle } from '../profiles/types';
 import { downloadBackup } from './backup';
 import { Sentences } from './Sentences';
+import { Tip, useTipMessage } from './Tip';
+import type { VehiclePhoto } from '../profiles/photo';
 
 export interface TransferPanelProps {
   readonly kind: ProfileKind;
@@ -23,7 +25,10 @@ export interface TransferPanelProps {
    */
   readonly label: string;
   /** Adds an imported entity to the collection and selects it. */
-  readonly onImport: (entity: Person | Vehicle | Appearance) => void;
+  /** The photograph travels with a vehicle; the caller stores it against the id it assigns. */
+  readonly onImport: (entity: Person | Vehicle | Appearance, photo: File | null) => void;
+  /** The active car's photograph, put into the file it exports. `null` for the other kinds. */
+  readonly photo: VehiclePhoto | null;
   /** The icon of the section this was opened from, so the panel says where it belongs. */
   readonly icon: React.ReactNode;
 }
@@ -44,30 +49,38 @@ export function TransferPanel({
   current,
   label,
   onImport,
+  photo,
   icon,
 }: TransferPanelProps): React.JSX.Element {
   const t = useTranslation();
   const input = useRef<HTMLInputElement>(null);
   const [over, setOver] = useState(false);
-  const [report, setReport] = useState<string | null>(null);
+  const answer = useTipMessage();
 
   const noun = t.transfer.kinds[kind];
 
   async function accept(file: File | undefined): Promise<void> {
     if (file === undefined) return;
 
-    const result = readTransferFile(kind, await file.text(), t);
+    const result = await readTransferFile(kind, file, t);
     if (result.entity === null) {
-      setReport(result.error);
+      answer.say(result.error);
       return;
     }
 
-    onImport(result.entity);
-    setReport(format(t.transfer.added, { name: result.entity.label }));
+    onImport(result.entity, result.photo);
+    answer.say(format(t.transfer.added, { name: result.entity.label }));
   }
 
   return (
     <div className="backup">
+      {/*
+        The answer floats clear of the panel rather than sitting in it: it replies to a gesture and
+        has nothing to add once read, where the frame below is a standing instruction. A line
+        appearing between the two pushed that instruction down the moment a file landed, moving the
+        thing the eye was already on.
+      */}
+      {answer.text !== null && <Tip key={answer.id} main={answer.text} />}
       {/*
         The frame is the panel, and the panel is the control.
 
@@ -114,16 +127,13 @@ export function TransferPanel({
         <Sentences text={format(t.transfer.scope, { kind: noun })} />
       </p>
 
-      {report !== null && <p className="report">{report}</p>}
-
       <div className="avatar-actions">
         <button
           type="button"
           className="chip"
           onClick={() =>
-            downloadBackup(
-              new Blob([buildTransferFile(kind, current)], { type: 'application/json' }),
-              transferFileName(kind, label),
+            void buildTransferFile(kind, current, photo).then((file) =>
+              downloadBackup(file, transferFileName(kind, label)),
             )
           }
         >

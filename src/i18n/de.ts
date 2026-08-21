@@ -4,6 +4,13 @@ export const de: Translation = {
   languageName: 'Deutsch',
   roadRules: 'Auf öffentlichen Straßen gilt zuerst die Straßenverkehrsordnung. Diese Anwendung rechtfertigt keinen Verstoß, und kein Schritt der Kalibrierung verlangt einen.',
 
+  driver: {
+    title: 'Wer fährt?',
+    hold: 'Namen gedrückt halten, um das Symbol zu ändern.',
+    addPhoto: 'Foto hinzufügen',
+    removePhoto: 'Foto entfernen',
+    chooseIcon: 'Symbol wählen',
+  },
   terms: {
     title: 'Vor der Fahrt',
     lead: 'Diese Anwendung zeigt an. Sie fährt nicht.',
@@ -73,10 +80,14 @@ export const de: Translation = {
     profileName: 'Umbenennen',
     vehicleDetected: 'Neues Fahrzeug erkannt',
     nameHint: 'Tippen, um es zu benennen — oder später in den Profileinstellungen.',
+    grids: 'Raster',
+    gridCount: '{count} Raster',
+    joinGrid: 'Beitreten',
+    splitGrid: 'Eigenes verwenden',
+    gridEmpty: 'Noch niemand',
     topSpeed: 'Höchstgeschwindigkeit',
     redline: 'Drehzahlgrenze',
     duplicate: 'Duplizieren',
-    newProfile: 'Neu',
     appearance: 'Darstellung',
     background: 'Hintergrund',
     avatar: 'Avatar',
@@ -107,47 +118,7 @@ export const de: Translation = {
     export: 'Exportieren',
     import: 'Importieren',
     remove: 'Entfernen',
-    backupHint:
-      'Einstellungen und Avatare in einer einzigen .{ext}-Datei. Alles liegt in diesem Browser; ein Import ersetzt alles.',
     backupWarning: 'Beim Import wird alles zurückgesetzt!',
-    backupNotice: `TACHSYNC-SICHERUNG
-==================
-
-Diese Datei ist ein gewöhnliches ZIP-ARCHIV mit einer anwendungseigenen
-Endung. Um sie mit dem Werkzeug deines Systems zu öffnen, benenne sie in
-.zip um — mehr ist nicht nötig.
-
-INHALT
-------
-
-  {settings}
-      Deine Einstellungen als eingerücktes JSON: Kachelanordnung je
-      Ausrichtung, importierte Kacheln und Hintergründe, gewählter
-      Avatar, Textskalierung. In jedem Texteditor lesbar und änderbar.
-
-  {avatars}
-      Die von dir importierten Avatardateien, unverändert (.riv, .glb
-      oder .gltf). Sie passen nicht in die Einstellungsdatei: es sind
-      Binärdateien von mehreren Megabyte.
-
-{list}{wallpaper}
-
-  {readme}
-      Dieser Hinweis.
-
-WIEDERHERSTELLEN
-----------------
-
-Einstellungen -> Sicherung -> Importieren, und diese Datei auswählen.
-Einstellungen und Avatare werden gemeinsam wiederhergestellt.
-
-Der Import ERSETZT die gesamte bestehende Konfiguration.
-
-Nur .{ext}-Dateien werden angenommen. Hast du nur eine alte, einzelne
-{settings}, lege sie unter genau diesem Namen in ein Zip-Archiv, benenne
-das Archiv in .{ext} um, und es wird normal gelesen.
-`,
-    backupNoticeNoAvatars: '  (zum Zeitpunkt der Sicherung kein Avatar importiert)',
     backupSaved: 'Sicherung gespeichert.',
     backupSavedWithAvatars: 'Sicherung gespeichert, mit {count} Avatar(en).',
     settingsRestored: 'Einstellungen wiederhergestellt.',
@@ -157,10 +128,14 @@ das Archiv in .{ext} um, und es wird normal gelesen.
     importBackground: 'Bild importieren',
     removeBackground: 'Bild entfernen',
     importedImage: 'Importiertes Bild',
-    backupNoticeWallpaper: '  wallpaper/\n      Das importierte Hintergrundbild, unverändert.',
     defaultBackground: 'Standard',
     noTheme: 'Ohne Thema',
     previousAvatar: 'Vorheriger Avatar',
+    hideObjects: 'Objekt ausblenden',
+    hideObjectsHint: 'Tippe ein Objekt an, um es auszublenden. Erneut auf die Schaltfläche zum Beenden.',
+    hideObjectsUnsupported: 'Dieser Avatar gibt seine Objekte nicht einzeln preis.',
+    hideObjectsLastOne: 'Mindestens ein Objekt muss sichtbar bleiben.',
+    showAllObjects: 'Wieder alles zeigen',
     nextAvatar: 'Nächster Avatar',
     close: 'Schließen',
   },
@@ -182,14 +157,14 @@ das Archiv in .{ext} um, und es wird normal gelesen.
   },
 
   editor: {
-    layout: 'Anordnung',
+    layout: 'Größe ändern',
+    tabSize: 'Größe',
+    tabOptions: 'Optionen',
     noRoom: 'Kein Platz: eine andere Kachel steht im Weg.',
     boardFull: 'Kein Platz: die Anzeige ist zu voll.',
     holdForSettings: 'Gedrückt halten, um die Einstellungen zu öffnen.',
     scale: 'Größe',
     layer: 'Ebene',
-    orientation: 'Ausrichtung',
-    normal: 'Normal',
     mirrored: 'Gespiegelt',
     whenMissing: 'Wenn der Wert fehlt',
     missingOnVehicle: 'Diesen Wert gibt es beim verbundenen Fahrzeug nicht.',
@@ -206,6 +181,10 @@ das Archiv in .{ext} um, und es wird normal gelesen.
     tile: 'Kachel',
     spacing: 'Abstand',
     spacingAuto: 'Thema',
+    align: 'Ausrichtung',
+    alignLeft: 'Links',
+    alignCenter: 'Zentriert',
+    alignRight: 'Rechts',
     dressing: 'Aufmachung',
     caption: 'Beschriftung',
     captions: {
@@ -239,11 +218,8 @@ das Archiv in .{ext} um, und es wird normal gelesen.
     exitEditMode: 'Bearbeitungsmodus verlassen',
     back: 'Zurück zum vorherigen Menü',
     columns: 'Spalten',
-    columnsShort: 'Sp.',
     rows: 'Zeilen',
-    rowsShort: 'Z.',
     add: 'erhöhen',
-    subtract: 'verringern',
     activeLayer: 'Aktive Ebene: {layer}. Zur nächsten wechseln',
   },
 
@@ -268,6 +244,7 @@ das Archiv in .{ext} um, und es wird normal gelesen.
   },
 
   metrics: {
+    peak: 'max.',
     speed: 'Geschwindigkeit',
     rpm: 'Drehzahl',
     gear: 'Gang',
@@ -374,7 +351,6 @@ das Archiv in .{ext} um, und es wird normal gelesen.
     notAnImage: 'Diese Datei ist kein Bild!',
     imageTooLarge: 'Bild zu groß: {size} MB (max. 16).',
     noTilesFound: 'Keine Kachel und kein Hintergrund in dieser Datei gefunden.',
-    storageUnavailable: 'Speicher nicht verfügbar.',
     notAnEntity: 'Diese Datei stammt nicht aus TachSync.',
     wrongEntityKind: 'Diese Datei enthält kein {kind}.',
     unreadableAvatarFile: 'Die Avatar-Datei konnte nicht gelesen werden.',

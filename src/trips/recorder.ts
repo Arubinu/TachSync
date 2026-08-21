@@ -1,4 +1,6 @@
 import { DrivingStyleTracker } from '../analysis/drivingStyle';
+import { boostPressure } from '../telemetry/types';
+import { TraceBuilder, type TripTrace } from './trace';
 import type { TelemetrySnapshot } from '../telemetry/TelemetryStore';
 import type { TripRecord } from './types';
 
@@ -14,6 +16,8 @@ export const MIN_DISTANCE_KM = 0.2;
 export const MIN_DURATION_S = 60;
 
 export interface TripContext {
+  /** `null` only in a test that does not care which car it is. */
+  readonly vehicleId: string | null;
   readonly vehicle: string;
   readonly source: TripRecord['source'];
 }
@@ -31,6 +35,7 @@ export interface TripContext {
  */
 export class TripRecorder {
   readonly #context: TripContext;
+  readonly #trace = new TraceBuilder();
   readonly #startedAt: number;
   #lastSnapshot: TelemetrySnapshot | null = null;
   #maxKmh = 0;
@@ -74,10 +79,39 @@ export class TripRecorder {
    */
   observeStyle(snapshot: TelemetrySnapshot, dt: number, redline: number): void {
     this.#style.observe(snapshot, dt, redline);
+
     const levels = this.#style.levels;
     this.#energySum += levels.energy;
     this.#harshnessSum += levels.harshness;
     this.#styleSamples += 1;
+  }
+
+  /**
+   * Keeps one reading of the trip in progress.
+   *
+   * Fed from the same fixed-interval tick as the style, and for the same reason: the frame
+   * subscription is served by the animation loop, which stops the moment the page is hidden. A
+   * trace built from it would simply end when the screen switched off.
+   *
+   * The trip's own clock is the abscissa, not the wall clock: it is what the summary counts, and
+   * it does not move while the car is stopped with the application in the background.
+   */
+  sample(snapshot: TelemetrySnapshot): void {
+    const { frame, trip } = snapshot;
+    const gap = (value: number | null): number => value ?? Number.NaN;
+
+    this.#trace.add(
+      trip.durationS,
+      gap(frame.speed),
+      gap(frame.rpm),
+      gap(frame.throttle),
+      gap(boostPressure(frame)),
+    );
+  }
+
+  /** `null` when nothing was ever sampled - a trip too short to have a shape. */
+  trace(): TripTrace | null {
+    return this.#trace.length === 0 ? null : this.#trace.build(String(this.#startedAt));
   }
 
   record(endedAt: number): TripRecord | null {
@@ -100,6 +134,7 @@ export class TripRecorder {
       maxRpm: this.#maxRpm,
       meanEnergy: this.#styleSamples === 0 ? null : this.#energySum / this.#styleSamples,
       meanHarshness: this.#styleSamples === 0 ? null : this.#harshnessSum / this.#styleSamples,
+      vehicleId: this.#context.vehicleId,
       vehicle: this.#context.vehicle,
       source: this.#context.source,
     };

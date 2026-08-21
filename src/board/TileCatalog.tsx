@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import type { TelemetryStore } from '../telemetry/TelemetryStore';
 import type { AnyChannel } from '../telemetry/types';
 import { findTheme, themeToTileVariables, THEMES, type ThemeManifest } from '../theme/themes';
 import { Modal } from './Modal';
 import { Tip } from './Tip';
+import { REVEAL, useSwipeToDelete } from '../hooks/useSwipeToDelete';
 import { FilterIcon, ImportIcon, TrashIcon } from './icons';
 import { MultiPickerList, PickerList, SelectField, type PickerRequest } from './Picker';
 import { useTranslation } from '../i18n';
@@ -44,6 +45,8 @@ export interface TileCatalogProps {
   /** Active theme: acts as a filter and is changed from the catalogue. */
   readonly themeId: string;
   readonly onThemeChange: (themeId: string) => void;
+  /** The avatar the board is showing, so its preview is the one that will be placed. */
+  readonly avatarId: string;
   /** Selected filter, kept from one opening to the next. */
   readonly metricFilter: readonly MetricId[];
   readonly onMetricFilterChange: (metrics: readonly MetricId[]) => void;
@@ -66,6 +69,7 @@ export function TileCatalog({
   presets,
   themeId,
   onThemeChange,
+  avatarId,
   metricFilter,
   onMetricFilterChange,
   onClose,
@@ -246,6 +250,7 @@ export function TileCatalog({
                 preset={preset}
                 store={store}
                 theme={theme}
+                avatarId={avatarId}
                 availableChannels={availableChannels}
                 onDelete={preset.builtIn ? null : () => onDeletePreset(preset.id)}
                 opened={opened === preset.id}
@@ -285,6 +290,7 @@ interface CatalogEntryProps {
   readonly preset: TilePreset;
   readonly store: TelemetryStore;
   readonly theme: ThemeManifest;
+  readonly avatarId: string;
   readonly availableChannels: ReadonlySet<AnyChannel>;
   /** `null` for a preset derived from a metric, which cannot be removed. */
   readonly onDelete: (() => void) | null;
@@ -295,24 +301,11 @@ interface CatalogEntryProps {
   readonly onRefuse: () => void;
 }
 
-/** Displacement below which a gesture stays a simple tap, in pixels. */
-const TAP_SLOP = 6;
-
-/** Drawer width, and therefore the row's travel when it opens, in pixels. */
-const REVEAL = 84;
-
-/**
- * Resistance offered to dragging a row that will not open.
- *
- * The row follows the finger at a third, then returns: it is not inert - which would suggest a
- * misread gesture - but neither does it promise an opening that will not come.
- */
-const RUBBER = 0.3;
-
 function CatalogEntry({
   preset,
   store,
   theme,
+  avatarId,
   availableChannels,
   onDelete,
   opened,
@@ -327,18 +320,18 @@ function CatalogEntry({
   const setVariablesRef = useTileVariables(store, tile.metrics);
   const missing = preset.metrics.filter((metric) => !isMetricAvailable(metric, availableChannels));
 
-  // The gesture in progress. Null until something starts, and abandoned as soon as the pointer
-  // moves onto the thumbnail: that is the handle for dragging to the grid, and the two gestures
-  // cannot share a start without one stealing the other.
-  const gesture = useRef<{ x: number; y: number } | null>(null);
-  const [drag, setDrag] = useState<number | null>(null);
-
-  function settle(): void {
-    gesture.current = null;
-    setDrag(null);
-  }
-
-  const offset = drag ?? (opened ? -REVEAL : 0);
+  const { offset, dragging, handlers } = useSwipeToDelete({
+    opened,
+    onOpenedChange,
+    enabled: onDelete !== null,
+    // A built-in tile opens neither on tap nor on drag; both refuse the same thing, so both
+    // explain the same thing.
+    onTap: onDelete === null ? onRefuse : () => onOpenedChange(!opened),
+    // The thumbnail is the handle for dragging to the grid: the two gestures cannot share a start
+    // without one stealing the other.
+    canStart: (target) =>
+      !(target instanceof Element) || target.closest('.catalog__preview') === null,
+  });
 
   return (
     <li
@@ -377,55 +370,9 @@ function CatalogEntry({
           transform: `translateX(${offset}px)`,
           // During the gesture the row sticks to the finger; it rejoins its position on release,
           // and only there does a transition make sense.
-          transition: drag === null ? undefined : 'none',
+          transition: dragging ? 'none' : undefined,
         }}
-        onPointerDown={(event) => {
-          if (event.target instanceof Element && event.target.closest('.catalog__preview') !== null) {
-            gesture.current = null;
-            return;
-          }
-          gesture.current = { x: event.clientX, y: event.clientY };
-          // Capture keeps the gesture on the row even if the finger leaves sideways. It fails for
-          // an already-released pointer - a synthetic event, say - and that is no reason to abandon
-          // the rest.
-          try {
-            event.currentTarget.setPointerCapture(event.pointerId);
-          } catch {
-            /** tracking continues without capture */
-          }
-        }}
-        onPointerMove={(event) => {
-          const start = gesture.current;
-          if (start === null) return;
-          const moved = event.clientX - start.x;
-          if (Math.abs(moved) <= TAP_SLOP) return;
-          const base = opened ? -REVEAL : 0;
-          setDrag(
-            onDelete === null
-              ? Math.min(0, moved * RUBBER)
-              : Math.max(-REVEAL, Math.min(0, base + moved)),
-          );
-        }}
-        onPointerUp={(event) => {
-          const start = gesture.current;
-          if (start === null) return;
-          const moved = Math.hypot(event.clientX - start.x, event.clientY - start.y);
-          settle();
-
-          if (onDelete === null) {
-            // A built-in tile opens neither on click nor on drag; both refuse the same thing, so
-            // both explain the same thing.
-            onRefuse();
-            return;
-          }
-          if (moved <= TAP_SLOP) {
-            onOpenedChange(!opened);
-            return;
-          }
-          // At half travel the row picks the edge it is nearest, so it never stays half open.
-          onOpenedChange((event.clientX - start.x + (opened ? -REVEAL : 0)) < -REVEAL / 2);
-        }}
-        onPointerCancel={settle}
+        {...handlers}
       >
         {/*
           The footprint at the head of the row, set vertically.
@@ -447,28 +394,43 @@ function CatalogEntry({
           {...listeners}
           {...attributes}
         >
-          {preset.metrics[0] === 'avatar' ? (
-            // An avatar preview would mount a whole rendering engine for a thumbnail: a symbol will
-            // do.
-            <span className="catalog__glyph" aria-hidden>
-              ☺
-            </span>
-          ) : (
-            <div
-              className="tile catalog__tile"
-              ref={setVariablesRef}
-              style={themeToTileVariables(theme) as React.CSSProperties}
-            >
-              <TileContent
-                tile={tile}
-                store={store}
-                avatarId=""
-                palette={{ accent: theme.colors.accent, accentAlt: theme.colors.accentAlt }}
-                template={preset.layout}
-                gauge={theme.tile.gauge}
-              />
-            </div>
-          )}
+          {/*
+            The avatar goes through the same path as every other preset, engine included.
+
+            A symbol stood here to spare a thumbnail the cost of mounting a rendering engine. It
+            answered the wrong question: each theme dresses its tiles differently, and what one
+            wants to judge before dragging is how this avatar sits in this theme's tile - which a
+            glyph outside any tile could not show. The engine is loaded anyway, since the board
+            behind the catalogue is already showing the same avatar.
+          */}
+          <div
+            className="tile catalog__tile"
+            ref={setVariablesRef}
+            style={
+              {
+                ...themeToTileVariables(theme),
+                /*
+                 * Thumbnail padding, and it has to be set here.
+                 *
+                 * A theme's padding is written for a full tile; on a 75 px thumbnail it took better
+                 * than a third of the height, leaving the avatar a band across the middle. The
+                 * stylesheet did carry this override, on `.catalog__tile` - but the theme arrives
+                 * as an inline style on that same element, and inline beats a class, so it never
+                 * applied. Set alongside the theme, it does.
+                 */
+                '--tile-padding': '0.45rem',
+              } as React.CSSProperties
+            }
+          >
+            <TileContent
+              tile={tile}
+              store={store}
+              avatarId={avatarId}
+              palette={{ accent: theme.colors.accent, accentAlt: theme.colors.accentAlt }}
+              template={preset.layout}
+              gauge={theme.tile.gauge}
+            />
+          </div>
         </div>
 
         <span className="catalog__label">
@@ -490,6 +452,7 @@ function previewTile(preset: TilePreset): TileConfig {
     flush: DEFAULT_FLUSH,
     spacing: null,
     chrome: DEFAULT_CHROME,
+    align: null,
     caption: DEFAULT_CAPTION,
     layer: 1,
     colStart: 1,
